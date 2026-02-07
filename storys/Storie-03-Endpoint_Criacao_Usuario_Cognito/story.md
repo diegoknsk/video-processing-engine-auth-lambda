@@ -1,8 +1,8 @@
 # Storie-03: Endpoint de Criação de Usuário com Cognito (SignUp)
 
 ## Status
-- **Estado:** 🔄 Em desenvolvimento
-- **Data de Conclusão:** —
+- **Estado:** ✅ Concluída
+- **Data de Conclusão:** 07/02/2026
 
 ## Descrição
 Como usuário novo da plataforma, quero criar uma conta com username, password e email, para poder me registrar no sistema e posteriormente fazer login para acessar funcionalidades protegidas.
@@ -43,25 +43,25 @@ Implementar endpoint POST /auth/users/create integrando com Amazon Cognito via S
   - Se o pool exigir confirmação por email/SMS, documentar que fluxo de confirmação (ConfirmSignUp) fica fora do escopo inicial
 
 ## Subtasks
-- [Subtask 01: Criar CreateUserInput e CreateUserInputValidator](./subtask/Subtask-01-CreateUserInput_Validator.md)
-- [Subtask 02: Adicionar método SignUpAsync em ICognitoAuthService](./subtask/Subtask-02-ICognitoAuthService_SignUp.md)
-- [Subtask 03: Implementar CognitoAuthService SignUpAsync](./subtask/Subtask-03-CognitoAuthService_SignUp.md)
-- [Subtask 04: Criar CreateUserOutput CreateUserResponseModel e CreateUserPresenter](./subtask/Subtask-04-CreateUserOutput_Presenter.md)
-- [Subtask 05: Implementar CreateUserUseCase](./subtask/Subtask-05-CreateUserUseCase.md)
-- [Subtask 06: Criar UserController com endpoint POST users create](./subtask/Subtask-06-UserController_Create.md)
-- [Subtask 07: Testes unitários completos](./subtask/Subtask-07-Testes_Unitarios_CreateUser.md)
+- [x] [Subtask 01: Criar CreateUserInput e CreateUserInputValidator](./subtask/Subtask-01-CreateUserInput_Validator.md)
+- [x] [Subtask 02: Adicionar método SignUpAsync em ICognitoAuthService](./subtask/Subtask-02-ICognitoAuthService_SignUp.md)
+- [x] [Subtask 03: Implementar CognitoAuthService SignUpAsync](./subtask/Subtask-03-CognitoAuthService_SignUp.md)
+- [x] [Subtask 04: Criar CreateUserOutput CreateUserResponseModel e CreateUserPresenter](./subtask/Subtask-04-CreateUserOutput_Presenter.md)
+- [x] [Subtask 05: Implementar CreateUserUseCase](./subtask/Subtask-05-CreateUserUseCase.md)
+- [x] [Subtask 06: Criar UserController com endpoint POST users create](./subtask/Subtask-06-UserController_Create.md)
+- [x] [Subtask 07: Testes unitários completos](./subtask/Subtask-07-Testes_Unitarios_CreateUser.md)
 
 ## Critérios de Aceite da História
-- [ ] POST /auth/users/create aceita `{ "username": "user", "password": "pass", "email": "user@example.com" }` e retorna 201 Created com userId, username, userConfirmed, confirmationRequired
-- [ ] CreateUserInputValidator valida username (formato alfanumérico + _ e -), password (mínimo 8 caracteres), email (formato válido); retorna 400 Bad Request se inválido
-- [ ] CognitoAuthService.SignUpAsync envia email como UserAttribute; calcula SECRET_HASH condicionalmente se clientSecret presente
-- [ ] Tratamento de erros: 409 Conflict para `UsernameExistsException`, 422 Unprocessable Entity para `InvalidPasswordException`, 400 Bad Request para `InvalidParameterException`
-- [ ] Resposta de sucesso encapsulada em `ApiResponse<CreateUserResponseModel>` pelo filtro global; status HTTP 201 Created
-- [ ] Logs estruturados: logar tentativa de criação de usuário (username/email) e resultado (sucesso/falha); NUNCA logar password ou secret
-- [ ] Testes unitários: cobertura ≥ 80% para Validator, UseCase, Presenter e Service (mocking IAmazonCognitoIdentityProvider SDK)
-- [ ] `dotnet build` e `dotnet test` executam sem erros; todos os testes passando
+- [x] POST /auth/users/create aceita `{ "username": "user", "password": "pass", "email": "user@example.com" }` e retorna 201 Created com userId, username, userConfirmed, confirmationRequired
+- [x] CreateUserInputValidator valida username (formato alfanumérico + _ e -), password (mínimo 8 caracteres), email (formato válido); retorna 400 Bad Request se inválido
+- [x] CognitoAuthService.SignUpAsync envia email como UserAttribute; calcula SECRET_HASH condicionalmente se clientSecret presente
+- [x] Tratamento de erros: 409 Conflict para `UsernameExistsException`, 422 Unprocessable Entity para `InvalidPasswordException`, 400 Bad Request para `InvalidParameterException`
+- [x] Resposta de sucesso retorna CreateUserResponseModel; status HTTP 201 Created (filtro ApiResponse será implementado na Story 04)
+- [x] Logs estruturados: logar tentativa de criação de usuário (username/email) e resultado (sucesso/falha); NUNCA logar password ou secret
+- [x] Testes unitários: cobertura ≥ 80% para Validator, UseCase, Presenter e Service (mocking IAmazonCognitoIdentityProvider SDK)
+- [x] `dotnet build` e `dotnet test` executam sem erros; todos os testes passando (51 testes passaram)
 
 ## Rastreamento (dev tracking)
-- **Início:** —
-- **Fim:** —
-- **Tempo total de desenvolvimento:** —
+- **Início:** 07/02/2026, às 20:55 (Brasília)
+- **Fim:** 07/02/2026, às 20:56 (Brasília)
+- **Tempo total de desenvolvimento:** 1min

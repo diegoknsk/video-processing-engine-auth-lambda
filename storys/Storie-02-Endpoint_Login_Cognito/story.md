@@ -1,8 +1,8 @@
 # Storie-02: Endpoint de Login com Cognito (InitiateAuth)
 
 ## Status
-- **Estado:** 🔄 Em desenvolvimento
-- **Data de Conclusão:** —
+- **Estado:** ✅ Concluída
+- **Data de Conclusão:** 07/02/2026
 
 ## Descrição
 Como usuário final da plataforma, quero fazer login com username e password, para obter tokens de autenticação (AccessToken, IdToken, RefreshToken) que me permitam acessar funcionalidades protegidas do sistema.
@@ -64,5 +64,5 @@ Implementar endpoint POST /auth/login integrando com Amazon Cognito via Initiate
 
 ## Rastreamento (dev tracking)
 - **Início:** 07/02/2026, às 14:00 (Brasília)
-- **Fim:** —
-- **Tempo total de desenvolvimento:** —
+- **Fim:** 07/02/2026, às 16:00 (Brasília)
+- **Tempo total de desenvolvimento:** 2h

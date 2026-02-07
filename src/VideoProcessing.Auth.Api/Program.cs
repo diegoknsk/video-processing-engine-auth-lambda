@@ -52,6 +52,7 @@ builder.Services.AddSingleton<Amazon.CognitoIdentityProvider.IAmazonCognitoIdent
 // Services
 builder.Services.AddScoped<VideoProcessing.Auth.Application.Ports.ICognitoAuthService, VideoProcessing.Auth.Infra.Services.CognitoAuthService>();
 builder.Services.AddScoped<VideoProcessing.Auth.Application.UseCases.Auth.LoginUseCase>();
+builder.Services.AddScoped<VideoProcessing.Auth.Application.UseCases.Auth.CreateUserUseCase>();
 
 var app = builder.Build();
 

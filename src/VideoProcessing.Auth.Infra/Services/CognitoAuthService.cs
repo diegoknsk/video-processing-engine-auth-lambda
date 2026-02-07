@@ -87,4 +87,66 @@ public class CognitoAuthService : ICognitoAuthService
             throw new UnauthorizedAccessException("Credenciais inválidas");
         }
     }
+
+    public async Task<CreateUserOutput> SignUpAsync(string username, string password, string email, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Attempting to create user {Username} with email {Email}", username, email);
+
+        try
+        {
+            var request = new SignUpRequest
+            {
+                ClientId = _options.AppClientId,
+                Username = username,
+                Password = password,
+                UserAttributes = new List<AttributeType>
+                {
+                    new AttributeType { Name = "email", Value = email }
+                }
+            };
+
+            // Calcular SECRET_HASH apenas se AppClientSecret estiver configurado
+            if (!string.IsNullOrWhiteSpace(_options.AppClientSecret))
+            {
+                var secretHash = SecretHashCalculator.ComputeSecretHash(
+                    username,
+                    _options.AppClientId,
+                    _options.AppClientSecret);
+                request.SecretHash = secretHash;
+            }
+
+            var response = await _cognitoClient.SignUpAsync(request, cancellationToken);
+
+            _logger.LogInformation("User {Username} created successfully; UserSub: {UserSub}, UserConfirmed: {UserConfirmed}", 
+                username, response.UserSub, response.UserConfirmed);
+
+            return new CreateUserOutput
+            {
+                UserId = response.UserSub,
+                Username = username,
+                UserConfirmed = response.UserConfirmed,
+                ConfirmationRequired = !response.UserConfirmed
+            };
+        }
+        catch (UsernameExistsException ex)
+        {
+            _logger.LogWarning("User creation failed for {Username}: UsernameExistsException - {ErrorCode}", username, ex.ErrorCode);
+            throw;
+        }
+        catch (InvalidPasswordException ex)
+        {
+            _logger.LogWarning("User creation failed for {Username}: InvalidPasswordException - {ErrorCode}", username, ex.ErrorCode);
+            throw;
+        }
+        catch (InvalidParameterException ex)
+        {
+            _logger.LogWarning("User creation failed for {Username}: InvalidParameterException - {ErrorCode}", username, ex.ErrorCode);
+            throw new ArgumentException("Parâmetro inválido.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "User creation failed for {Username}: Unexpected error", username);
+            throw;
+        }
+    }
 }

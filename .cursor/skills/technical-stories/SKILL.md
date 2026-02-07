@@ -58,22 +58,39 @@ Nunca criar stories fora de `storys/`. Nunca criar a pasta da story diretamente 
 
 Aplica-se quando estivermos **desenvolvendo** uma story (arquivos em `storys/` ou referência a story/subtask).
 
-**Fuso:** sempre **horário de Brasília**. **Nunca inventar horários.** Usar horário que o usuário informar ou, ao concluir, o horário em que ele disser que está pronto. Em dúvida, perguntar.
+**Fuso:** sempre **horário de Brasília**. 
+
+**Regra de horário:**
+- **SEMPRE obter o horário atual do sistema** usando comando `powershell -Command "Get-Date -Format 'dd/MM/yyyy HH:mm'"` ou equivalente quando iniciar ou finalizar o desenvolvimento.
+- **Nunca inventar horários.**
+- Se o usuário informar explicitamente um horário específico (ex.: "o horário agora é 20:56"), usar esse horário informado pelo usuário em vez de obter do sistema.
+- Em dúvida, perguntar ao usuário.
 
 ### Ao iniciar o desenvolvimento
 
-1. No **início** da sessão de dev, registrar no `story.md` a seção **Rastreamento (dev tracking)** (criar se não existir):
-   - **Início:** dia DD/MM/AAAA, às HH:MM (Brasília)
+1. **OBTER o horário atual do sistema** usando comando apropriado (ex.: `powershell -Command "Get-Date -Format 'dd/MM/yyyy HH:mm'"`).
+2. No **início** da sessão de dev, registrar no `story.md` a seção **Rastreamento (dev tracking)** (criar se não existir):
+   - **Início:** dia DD/MM/AAAA, às HH:MM (Brasília) — usar o horário obtido do sistema
    - **Fim:** —
    - **Tempo total de desenvolvimento:** —
 
 ### Ao usuário avisar que está concluído ("pronto", "finalizado", etc.)
 
-1. Marcar a story como **✅ Concluída** no `story.md` (Status e Data de Conclusão DD/MM/AAAA).
-2. Marcar **todas as subtasks** como prontas (`[x]`) no `story.md` e, se aplicável, nos arquivos em `subtask/*.md`.
-3. Na seção **Rastreamento (dev tracking)** do `story.md`:
-   - **Fim:** dia DD/MM/AAAA, às HH:MM (Brasília)
-   - **Tempo total de desenvolvimento:** Xh Ymin (calcular a partir do Início e do Fim)
+1. **OBTER o horário atual do sistema** usando comando apropriado (ex.: `powershell -Command "Get-Date -Format 'dd/MM/yyyy HH:mm'"`).
+2. Marcar a story como **✅ Concluída** no `story.md` (Status e Data de Conclusão DD/MM/AAAA).
+3. Marcar **todas as subtasks** como prontas (`[x]`) no `story.md` e, se aplicável, nos arquivos em `subtask/*.md`.
+4. Na seção **Rastreamento (dev tracking)** do `story.md`:
+   - **Fim:** dia DD/MM/AAAA, às HH:MM (Brasília) — usar o horário obtido do sistema
+   - **Tempo total de desenvolvimento:** calcular corretamente a diferença entre Início e Fim:
+     - **Método de cálculo:** converter ambos os horários para minutos desde meia-noite, calcular a diferença, e converter de volta para horas/minutos
+     - Se a diferença for menor que 1 hora: usar formato "Xmin" (ex.: "15min", "45min", "1min")
+     - Se a diferença for 1 hora ou mais: usar formato "Xh Ymin" (ex.: "1h 30min", "2h 15min")
+     - Se a diferença for exatamente X horas sem minutos: usar formato "Xh" (ex.: "2h")
+     - **Exemplos de cálculo correto:**
+       - Início: 20:55, Fim: 20:56 → diferença = 1min → "1min"
+       - Início: 14:00, Fim: 16:00 → diferença = 120min = 2h → "2h"
+       - Início: 14:30, Fim: 16:15 → diferença = 105min = 1h 45min → "1h 45min"
+       - Início: 09:10, Fim: 10:05 → diferença = 55min → "55min"
 
 ---
 
