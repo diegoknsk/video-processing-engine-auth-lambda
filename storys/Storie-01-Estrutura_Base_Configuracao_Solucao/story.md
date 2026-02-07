@@ -44,23 +44,23 @@ Criar a estrutura completa de projetos (.Api, .Application, .Infra, .Tests.Unit)
   - Familiaridade com Amazon.Lambda.AspNetCoreServer.Hosting
 
 ## Subtasks
-- [Subtask 01: Criar solução e projetos](./subtask/Subtask-01-Criar_Solucao_Projetos.md)
-- [Subtask 02: Configurar Program.cs com Lambda Hosting](./subtask/Subtask-02-Configurar_Program_Lambda.md)
-- [Subtask 03: Configurar appsettings e Options pattern](./subtask/Subtask-03-Configurar_AppSettings_Options.md)
-- [Subtask 04: Instalar pacotes NuGet](./subtask/Subtask-04-Instalar_Pacotes_NuGet.md)
-- [Subtask 05: Criar estrutura de pastas](./subtask/Subtask-05-Criar_Estrutura_Pastas.md)
-- [Subtask 06: Configurar FluentValidation](./subtask/Subtask-06-Configurar_FluentValidation.md)
+- [x] [Subtask 01: Criar solução e projetos](./subtask/Subtask-01-Criar_Solucao_Projetos.md)
+- [x] [Subtask 02: Configurar Program.cs com Lambda Hosting](./subtask/Subtask-02-Configurar_Program_Lambda.md)
+- [x] [Subtask 03: Configurar appsettings e Options pattern](./subtask/Subtask-03-Configurar_AppSettings_Options.md)
+- [x] [Subtask 04: Instalar pacotes NuGet](./subtask/Subtask-04-Instalar_Pacotes_NuGet.md)
+- [x] [Subtask 05: Criar estrutura de pastas](./subtask/Subtask-05-Criar_Estrutura_Pastas.md)
+- [x] [Subtask 06: Configurar FluentValidation](./subtask/Subtask-06-Configurar_FluentValidation.md)
 
 ## Critérios de Aceite da História
-- [ ] Solução com 4 projetos criados (Api, Application, Infra, Tests.Unit) e adicionados ao .sln; `dotnet build` executa sem erros
-- [ ] Program.cs configurado com `AddAWSLambdaHosting()` e middleware básico (CORS, logging estruturado)
-- [ ] appsettings.json com seção Cognito (placeholders vazios); CognitoOptions com IOptions<T> registrado no DI
-- [ ] Todos os pacotes NuGet instalados nas versões recomendadas; `dotnet restore` funciona sem erros
-- [ ] Estrutura de pastas criada conforme plano arquitetural (Controllers/Auth, UseCases/Auth, Validators/Auth, Presenters/Auth, Ports, Services)
-- [ ] FluentValidation registrado com `AddFluentValidationAutoValidation()` e assembly scanning; filtro global de validação aplicado
-- [ ] Testes unitários iniciais (smoke test) passando; `dotnet test` executa com sucesso; cobertura mínima configurada
+- [x] Solução com 4 projetos criados (Api, Application, Infra, Tests.Unit) e adicionados ao .sln; `dotnet build` executa sem erros
+- [x] Program.cs configurado com `AddAWSLambdaHosting()` e middleware básico (CORS, logging estruturado)
+- [x] appsettings.json com seção Cognito (placeholders vazios); CognitoOptions com IOptions<T> registrado no DI
+- [x] Todos os pacotes NuGet instalados nas versões recomendadas; `dotnet restore` funciona sem erros
+- [x] Estrutura de pastas criada conforme plano arquitetural (Controllers/Auth, UseCases/Auth, Validators/Auth, Presenters/Auth, Ports, Services)
+- [x] FluentValidation registrado com `AddFluentValidationAutoValidation()` e assembly scanning; filtro global de validação aplicado
+- [x] Testes unitários iniciais (smoke test) passando; `dotnet test` executa com sucesso; cobertura mínima configurada
 
 ## Rastreamento (dev tracking)
-- **Início:** —
+- **Início:** 07/02/2026, às 10:00 (Brasília)
 - **Fim:** —
 - **Tempo total de desenvolvimento:** —

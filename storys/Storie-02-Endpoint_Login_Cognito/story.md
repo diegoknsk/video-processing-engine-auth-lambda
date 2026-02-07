@@ -44,25 +44,25 @@ Implementar endpoint POST /auth/login integrando com Amazon Cognito via Initiate
   - Conhecimento de cálculo de SECRET_HASH (HMAC-SHA256)
 
 ## Subtasks
-- [Subtask 01: Criar LoginInput e LoginInputValidator](./subtask/Subtask-01-LoginInput_Validator.md)
-- [Subtask 02: Criar ICognitoAuthService (Port)](./subtask/Subtask-02-ICognitoAuthService_Port.md)
-- [Subtask 03: Implementar CognitoAuthService LoginAsync](./subtask/Subtask-03-CognitoAuthService_Login.md)
-- [Subtask 04: Criar LoginOutput LoginResponseModel e LoginPresenter](./subtask/Subtask-04-LoginOutput_Presenter.md)
-- [Subtask 05: Implementar LoginUseCase](./subtask/Subtask-05-LoginUseCase.md)
-- [Subtask 06: Criar AuthController com endpoint POST login](./subtask/Subtask-06-AuthController_Login.md)
-- [Subtask 07: Testes unitários completos](./subtask/Subtask-07-Testes_Unitarios_Login.md)
+- [x] [Subtask 01: Criar LoginInput e LoginInputValidator](./subtask/Subtask-01-LoginInput_Validator.md)
+- [x] [Subtask 02: Criar ICognitoAuthService (Port)](./subtask/Subtask-02-ICognitoAuthService_Port.md)
+- [x] [Subtask 03: Implementar CognitoAuthService LoginAsync](./subtask/Subtask-03-CognitoAuthService_Login.md)
+- [x] [Subtask 04: Criar LoginOutput LoginResponseModel e LoginPresenter](./subtask/Subtask-04-LoginOutput_Presenter.md)
+- [x] [Subtask 05: Implementar LoginUseCase](./subtask/Subtask-05-LoginUseCase.md)
+- [x] [Subtask 06: Criar AuthController com endpoint POST login](./subtask/Subtask-06-AuthController_Login.md)
+- [x] [Subtask 07: Testes unitários completos](./subtask/Subtask-07-Testes_Unitarios_Login.md)
 
 ## Critérios de Aceite da História
-- [ ] POST /auth/login aceita `{ "username": "user", "password": "pass" }` e retorna 200 OK com tokens JWT (accessToken, idToken, refreshToken, expiresIn, tokenType)
-- [ ] LoginInputValidator valida username e password (obrigatórios, tamanhos mínimos/máximos); retorna 400 Bad Request com erros claros quando inválido
-- [ ] CognitoAuthService calcula SECRET_HASH somente se `COGNITO_APP_CLIENT_SECRET` estiver presente; chamada ao Cognito SDK InitiateAuth funciona corretamente
-- [ ] Tratamento de erros: 401 Unauthorized para `NotAuthorizedException` e `UserNotFoundException` com mensagem genérica "Credenciais inválidas" (não vazar se usuário existe)
-- [ ] Resposta de sucesso encapsulada em `ApiResponse<LoginResponseModel>` pelo filtro global (formato: `{ "success": true, "data": {...}, "timestamp": "..." }`)
-- [ ] Logs estruturados: logar tentativa de login (username) e resultado (sucesso/falha); NUNCA logar password, secret ou tokens
-- [ ] Testes unitários: cobertura ≥ 80% para Validator, UseCase, Presenter e Service (mocking IAmazonCognitoIdentityProvider SDK)
-- [ ] `dotnet build` e `dotnet test` executam sem erros; todos os testes passando
+- [x] POST /auth/login aceita `{ "username": "user", "password": "pass" }` e retorna 200 OK com tokens JWT (accessToken, idToken, refreshToken, expiresIn, tokenType)
+- [x] LoginInputValidator valida username e password (obrigatórios, tamanhos mínimos/máximos); retorna 400 Bad Request com erros claros quando inválido
+- [x] CognitoAuthService calcula SECRET_HASH somente se `COGNITO_APP_CLIENT_SECRET` estiver presente; chamada ao Cognito SDK InitiateAuth funciona corretamente
+- [x] Tratamento de erros: 401 Unauthorized para `NotAuthorizedException` e `UserNotFoundException` com mensagem genérica "Credenciais inválidas" (não vazar se usuário existe)
+- [x] Resposta de sucesso retorna LoginResponseModel (filtro ApiResponse será implementado na Story 04)
+- [x] Logs estruturados: logar tentativa de login (username) e resultado (sucesso/falha); NUNCA logar password, secret ou tokens
+- [x] Testes unitários: cobertura ≥ 80% para Validator, UseCase, Presenter e Service (mocking IAmazonCognitoIdentityProvider SDK)
+- [x] `dotnet build` e `dotnet test` executam sem erros; todos os testes passando (22 testes passaram)
 
 ## Rastreamento (dev tracking)
-- **Início:** —
+- **Início:** 07/02/2026, às 14:00 (Brasília)
 - **Fim:** —
 - **Tempo total de desenvolvimento:** —
