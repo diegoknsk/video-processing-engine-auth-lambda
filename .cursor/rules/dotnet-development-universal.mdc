@@ -1,0 +1,450 @@
+---
+alwaysApply: false
+description: "Regras universais de desenvolvimento .NET — agnóstico a projeto, consolidado para excelência."
+---
+
+# Desenvolvimento .NET — Guia Universal
+
+## Objetivo
+
+Este documento consolida regras de desenvolvimento em C#, ASP.NET Core e ecossistema .NET de forma **agnóstica a projeto**, servindo como padrão de excelência para qualquer aplicação. Complementa o guia de arquitetura (ex.: Clean Architecture) com convenções de código, validação, API, testes e integrações.
+
+---
+
+## 1. Perfil e Estilo de Código
+
+- Atuar como desenvolvedor .NET sênior: código **conciso e idiomático**, seguindo convenções e melhores práticas da Microsoft.
+- Usar OOP e recursos funcionais quando apropriado; preferir **LINQ e expressões lambda** para coleções.
+- Nomes **descritivos** (ex.: `IsUserSignedIn`, `CalculateTotal`); estrutura de arquivos alinhada às convenções .NET (Controllers, Models, Services, etc.).
+- **Versão recomendada:** **.NET 10** para novos projetos (LTS mais recente com C# 13).
+- Aproveitar recursos modernos do C# 13 e .NET 10 quando apropriado.
+
+---
+
+## 2. Convenções de Nomenclatura
+
+| Elemento            | Convenção   | Exemplo                    |
+|---------------------|------------|----------------------------|
+| Classes, métodos, propriedades | PascalCase | `UserService`, `GetById`   |
+| Variáveis locais, campos privados | camelCase  | `userName`, `_repository`  |
+| Constantes          | UPPERCASE  | `MaxRetryCount`            |
+| Interfaces          | Prefixo `I`| `IUserRepository`, `ITokenService` |
+
+---
+
+## 3. C# e Sintaxe
+
+- Seguir as [C# Coding Conventions](https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions) da Microsoft.
+- Usar recursos modernos quando fizer sentido:
+  - **Record types**, **pattern matching**, **null-coalescing** (`??=`)
+  - **Primary constructors** (C# 12+) para classes com injeção de dependência
+  - **Collection expressions** (C# 13): `[item1, item2]` em vez de `new List<T> { ... }`
+  - **params Span<T>** (C# 13) para métodos variádicos sem alocações
+  - **Null-conditional** (`?.`, `??`), **string interpolation** (`$"..."`), **expression-bodied members**
+  - **Raw string literals** (`"""..."""`) para strings multi-linha e JSON/XML embutido
+- Preferir **`var`** quando o tipo for óbvio pelo lado direito.
+- Aproveitar middleware e recursos built-in do ASP.NET Core; usar Entity Framework Core de forma eficiente quando for o ORM escolhido.
+
+**Exemplo de recursos modernos:**
+
+```csharp
+// ✅ Collection expressions (C# 13)
+var items = [item1, item2, item3];
+var combined = [..firstList, ..secondList];
+
+// ✅ params Span<T> (C# 13) — sem alocações
+public void LogItems(params ReadOnlySpan<string> items)
+{
+    foreach (var item in items) _logger.LogInformation(item);
+}
+
+// ✅ Raw string literals para JSON
+var json = """
+    {
+        "name": "John",
+        "age": 30
+    }
+    """;
+```
+
+---
+
+## 4. Tratamento de Erros e Logging
+
+- Usar **exceções para casos excepcionais**, não para controle de fluxo.
+- Implementar **logging estruturado** (ILogger do .NET ou biblioteca compatível como Serilog).
+- Usar **LoggerMessage Source Generators** (.NET 6+) para logging de alta performance:
+
+```csharp
+// ✅ Source generator para logging eficiente
+public static partial class Log
+{
+    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Processing order {OrderId}")]
+    public static partial void ProcessingOrder(ILogger logger, string orderId);
+}
+```
+
+- Ter **middleware global de exceções** que converta exceções em respostas HTTP padronizadas (Problem Details RFC 7807 recomendado) e códigos apropriados (400, 401, 404, 500).
+- Retornar **códigos HTTP e mensagens de erro consistentes** em toda a API.
+- Considerar **IExceptionHandler** (.NET 8+) para tratamento tipado de exceções.
+
+---
+
+## 5. Validação com FluentValidation
+
+- **Usar FluentValidation** para validar todos os InputModels **antes** de chegarem aos UseCases.
+
+### 5.1 Princípios
+
+- Validators verificam **apenas forma e consistência local** do input: required, min/max, formatos, ranges, listas não vazias, etc.
+- **Validators NÃO** acessam banco de dados nem chamam services.
+- **Regras de negócio** (ex.: entidade existe, estado permite operação) ficam no UseCase/Domain.
+- Quando o input for inválido: retornar **400** com erros padronizados, **sem** executar o UseCase.
+
+### 5.2 Regra Crítica: Apenas Campos do Body
+
+- InputModels representam **apenas o body** da requisição HTTP.
+- **Validators validam somente** propriedades do InputModel (campos do body).
+- **Nunca** validar no validator: route parameters (ex.: `TenantId`, `ResourceId`) nem headers (ex.: `ApiKey`, `ApiToken`). Route params são validados pelo binding; headers são validados pelo filtro de autenticação.
+
+### 5.3 Estrutura e Configuração
+
+- Estrutura: `Application/Validators/<Contexto>/<InputModelName>Validator.cs`; herdar de `AbstractValidator<T>`.
+- Registrar no bootstrap (ex.: `Program.cs`):
+  - `AddFluentValidationAutoValidation()`, `AddFluentValidationClientsideAdapters()`
+  - `AddValidatorsFromAssemblyContaining<AlgumValidator>()` para registrar todos os validators do assembly.
+- Usar um **filtro** (ex.: FluentValidationFilter) para converter falhas de validação no formato de erro padronizado da API.
+
+### 5.4 Regras Comuns
+
+- **Obrigatório:** `NotEmpty()` ou `NotNull()`
+- **Strings:** `MaximumLength()` / `MinimumLength()`
+- **Guid:** `NotEmpty()`
+- **Enum:** `IsInEnum()`
+- **Listas:** `NotEmpty()` + `RuleForEach()` quando necessário
+- **Datas/decimais:** `GreaterThan()` / `GreaterThanOrEqualTo()`
+- **Email:** `EmailAddress()`; **Regex:** `Matches()`
+
+### 5.5 UseCases sem Validação Básica Redundante
+
+- **Remover** do UseCase validações que já são feitas pelo FluentValidation (null, vazio, formato).
+- UseCases assumem input já validado e focam em **orquestração e regras de negócio**.
+
+**Exemplo (agnóstico):**
+
+```csharp
+public class CreateUserInputValidator : AbstractValidator<CreateUserInput>
+{
+    public CreateUserInputValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .WithMessage("Email é obrigatório.")
+            .EmailAddress()
+            .WithMessage("Email em formato inválido.");
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+    }
+}
+
+// UseCase — sem revalidar campos do input
+public async Task<CreateUserResponseModel> ExecuteAsync(CreateUserInput input, CancellationToken ct = default)
+{
+    // Input já validado pelo FluentValidation
+    var user = await _userRepository.CreateAsync(input, ct);
+    return CreateUserPresenter.Present(user);
+}
+```
+
+---
+
+## 6. Design de API
+
+- Seguir princípios **RESTful**; usar **attribute routing** nos controllers.
+- **Alternativa moderna:** considerar **Minimal APIs** (.NET 6+) para endpoints simples com menos boilerplate:
+
+```csharp
+// ✅ Minimal API (alternativa aos controllers)
+app.MapPost("/users", async (CreateUserInput input, ICreateUserUseCase useCase) =>
+{
+    var result = await useCase.ExecuteAsync(input);
+    return Results.Ok(result);
+})
+.WithName("CreateUser")
+.WithOpenApi();
+```
+
+- Considerar **versionamento** da API (URL ou header).
+- Usar **action filters** para cross-cutting (autenticação, logging, etc.).
+- **Documentar** endpoints com XML comments para enriquecer Swagger/OpenAPI.
+- **Rate limiting:** usar middleware built-in de rate limiting (.NET 7+) quando apropriado.
+- **Output caching:** aproveitar output caching (.NET 7+) para endpoints idempotentes.
+
+---
+
+## 7. Serialização JSON
+
+- **Padrão:** camelCase para propriedades JSON (PascalCase em C# → camelCase em JSON).
+- Usar **System.Text.Json** (padrão do .NET) em vez de Newtonsoft.Json para novos projetos.
+
+**Configuração sugerida (Program.cs):**
+
+```csharp
+services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.WriteIndented = false; // ou true em dev
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull; // opcional
+});
+```
+
+- **InputModels e ResponseModels:** não usar `[JsonPropertyName]` quando o padrão camelCase for suficiente.
+- Usar `[JsonPropertyName]` **apenas** quando o contrato da API exigir nomes diferentes (ex.: modelos de envelope como `ApiResponse<T>`).
+- **Source Generators:** considerar `[JsonSerializable]` para AOT e performance em cenários críticos (.NET 6+).
+
+---
+
+## 8. Performance e Assincronismo
+
+- Usar **async/await** para operações I/O-bound; evitar bloqueio de thread.
+- **Evitar `async void`** exceto para event handlers; usar `async Task`.
+- **ConfigureAwait:** em bibliotecas (não UI), considerar `ConfigureAwait(false)` para evitar captura desnecessária do contexto (menos relevante no .NET Core+, mas ainda válido).
+- **ValueTask<T>:** usar quando a operação frequentemente completa de forma síncrona ou quando alocações são críticas.
+- **IAsyncEnumerable<T>:** usar para streaming de dados assíncronos.
+
+```csharp
+// ✅ Streaming assíncrono
+public async IAsyncEnumerable<Order> GetOrdersStreamAsync(
+    [EnumeratorCancellation] CancellationToken ct = default)
+{
+    await foreach (var order in _repository.StreamOrdersAsync(ct))
+    {
+        yield return order;
+    }
+}
+```
+
+- Considerar **cache** (IMemoryCache, distributed cache, output caching) onde fizer sentido.
+- Escrever queries **LINQ/EF** eficientes; evitar **N+1** (Include, projeções, etc.); usar `AsNoTracking()` para queries read-only.
+- Implementar **paginação** para listagens grandes.
+- **Span<T> e Memory<T>:** usar para manipulação de arrays sem alocações em hot paths.
+- **ArrayPool<T>:** reutilizar buffers para reduzir pressão no GC.
+
+---
+
+## 9. Dependency Injection e Convenções
+
+- Configurar **DI no bootstrap** (Program.cs); injetar dependências via **construtor** (preferir primary constructors no C# 12+).
+- **Não** instanciar serviços/repositórios fora do bootstrap; usar interfaces para desacoplamento e testes.
+- **Keyed Services** (.NET 8+): registrar múltiplas implementações com chaves quando necessário:
+
+```csharp
+// ✅ Keyed services
+services.AddKeyedSingleton<INotificationService, EmailService>("email");
+services.AddKeyedSingleton<INotificationService, SmsService>("sms");
+
+// Injeção
+public class NotificationHandler(
+    [FromKeyedServices("email")] INotificationService emailService)
+{
+    // ...
+}
+```
+
+- **Mapeamento:** usar AutoMapper (ou similar) quando houver mapeamento repetitivo objeto-para-objeto; evitar código manual desnecessário.
+- **Background tasks:** usar `IHostedService` ou `BackgroundService`.
+- **Persistência:** repository pattern ou uso direto do EF Core conforme complexidade do projeto (alinhado ao guia de arquitetura).
+
+---
+
+## 10. Gerenciamento de Solução
+
+- **Sempre** adicionar novos projetos ao arquivo de solução (`.sln`/`.slnx`) após criá-los: `dotnet sln <arquivo> add <caminho-projeto>`.
+- Manter organização clara: ex.: projetos em `src/` e `tests/` na raiz da solução, sem pastas virtuais desnecessárias no Solution Explorer.
+- Verificar se o projeto aparece corretamente no Solution Explorer após adicionar.
+
+---
+
+## 11. Testes
+
+- **Unitários:** xUnit, NUnit ou MSTest; Moq, NSubstitute ou FakeItEasy para mocks.
+- **Integração:** usar `WebApplicationFactory` para testes de integração de APIs; test containers para dependências (banco, cache, etc.).
+- **Cobertura:** meta de **≥ 80%** (linha); executar testes e cobertura no CI/CD.
+- **Mutation Testing:** considerar Stryker.NET para validar qualidade dos testes em projetos críticos.
+
+### 11.1 Build e Testes antes de Finalizar
+
+- **Obrigatório** (para atividades que envolvem código): executar **build** e **testes** antes de dar por concluída a tarefa.
+- Comandos: `dotnet build` e `dotnet test --collect:"XPlat Code Coverage"`.
+- Validações: build sem erros; todos os testes passando; cobertura dentro da meta (≥ 80%).
+- Se build falhar, testes falharem ou cobertura insuficiente, **corrigir** antes de finalizar.
+- Exceção: tarefas que não envolvem código (ex.: documentação pura, configuração de ambiente sem alteração de código).
+
+---
+
+## 12. Segurança
+
+- Usar **middleware de autenticação e autorização**; implementar **JWT** (ou mecanismo equivalente) para APIs stateless quando aplicável.
+- **HTTPS** e TLS em produção; políticas **CORS** adequadas.
+- **Validar e sanitizar** todas as entradas; não confiar em dados do cliente.
+- **Secrets:** nunca versionar segredos; usar User Secrets (dev), variáveis de ambiente, Azure Key Vault, AWS Secrets Manager ou equivalente.
+- **Rate limiting:** considerar middleware de rate limiting (.NET 7+) para proteção contra abuso.
+- **Security headers:** adicionar headers de segurança (HSTS, X-Frame-Options, etc.) via middleware.
+
+---
+
+## 13. Documentação de API
+
+- **Swagger/OpenAPI** (ex.: Swashbuckle.AspNetCore) para documentação da API.
+- XML comments em controllers e models para melhorar a documentação gerada.
+- Habilitar Swagger em ambiente local e, quando permitido, em produção.
+
+---
+
+## 14. Integração com APIs Externas — Refit
+
+- **Preferir Refit** para clientes HTTP de APIs externas: menos boilerplate, type-safe, fácil de mockar e manter.
+- **Evitar** implementações manuais de HttpClient quando Refit atender ao caso.
+- **Resilience:** usar **Polly** ou **Microsoft.Extensions.Http.Resilience** (.NET 8+) para retry, circuit breaker, timeout e fallback.
+
+**Exemplo de interface e registro (agnóstico):**
+
+```csharp
+public interface IExternalAuthApi
+{
+    [Post("/token")]
+    [Headers("Content-Type: application/json")]
+    Task<TokenResponse> GetTokenAsync(
+        [Header("X-Api-Key")] string apiKey,
+        [Header("X-Api-Secret")] string apiSecret,
+        CancellationToken cancellationToken = default);
+}
+
+// Program.cs com resilience
+builder.Services.AddRefitClient<IExternalAuthApi>()
+    .ConfigureHttpClient((sp, client) =>
+    {
+        var options = sp.GetRequiredService<IOptions<ExternalApiOptions>>().Value;
+        client.BaseAddress = new Uri(options.BaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+    })
+    .AddStandardResilienceHandler(); // .NET 8+ resilience
+```
+
+- **Tratamento de erros:** Refit lança `ApiException` em falhas HTTP; capturar nos serviços que consomem a interface e mapear para exceções/respostas do domínio ou da API.
+- **HTTP/3:** aproveitar quando suportado pelo servidor remoto (.NET 6+).
+
+---
+
+## 15. Tokens e Credenciais — Onde Não Colocar
+
+- **Não** criar entidades de token ou credenciais no **Domain**; são conceitos de infraestrutura.
+- **Application:** OutputModels para resultado do use case (ex.: token de resposta).
+- **Infra:** modelos de resposta da API externa (ex.: `TokenResponse`). Domain deve conter apenas conceitos de negócio.
+
+---
+
+## 16. Configuração e Valores Sensíveis
+
+- **Preferir variáveis de ambiente** (ou IOptions lendo de configuração que as utilize) para configurações sensíveis e específicas de ambiente.
+- **Não** versionar segredos em `appsettings.json`; usar placeholders vazios no repositório quando necessário.
+- **User Secrets** para desenvolvimento local: `dotnet user-secrets set "Section:Key" "value"`.
+- **Produção:** Azure Key Vault, AWS Secrets Manager, HashiCorp Vault ou variáveis de ambiente.
+- Leitura via `IConfiguration`; nomes no formato `Section__Key` (ex.: `ExternalApi__BaseUrl`, `ExternalApi__TimeoutSeconds`) para opções tipadas.
+- **Options pattern:** preferir `IOptions<T>` para configurações tipadas e validadas.
+
+---
+
+## 17. Observabilidade e Métricas
+
+- **Logging estruturado:** usar ILogger com structured logging; considerar Serilog para cenários avançados.
+- **Métricas:** aproveitar **System.Diagnostics.Metrics** (.NET 8+) para instrumentação nativa; exportar para Prometheus, Azure Monitor, AWS CloudWatch ou similar.
+- **Tracing distribuído:** usar **OpenTelemetry** (.NET 7+) para rastreamento de requisições entre serviços; instrumentação automática disponível.
+- **Activity/ActivitySource:** usar para rastreamento customizado de operações.
+- **Health Checks:** implementar endpoints `/health` e `/health/ready` usando middleware built-in; adicionar checks de dependências (DB, cache, APIs externas).
+
+```csharp
+// ✅ Exemplo de health check customizado
+public class DatabaseHealthCheck : IHealthCheck
+{
+    private readonly IDbConnection _connection;
+    
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context, CancellationToken ct = default)
+    {
+        try
+        {
+            await _connection.OpenAsync(ct);
+            return HealthCheckResult.Healthy();
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("Database unreachable", ex);
+        }
+    }
+}
+```
+
+---
+
+## 18. Native AOT e Trimming (Opcional)
+
+- **Native AOT** (.NET 7+): para cenários que exigem inicialização ultra-rápida e footprint reduzido (ex.: serverless, containers).
+- **Considerações:** nem todas as bibliotecas são compatíveis; usar source generators (JSON, regex, etc.) para compatibilidade.
+- **Trimming:** habilitar para reduzir tamanho do binário; testar extensivamente pois pode remover código usado via reflexão.
+- **Quando usar:** avaliar trade-offs; útil em AWS Lambda, Azure Container Apps, microserviços com cold start crítico.
+
+```xml
+<!-- ✅ Exemplo de configuração para Native AOT -->
+<PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+</PropertyGroup>
+```
+
+---
+
+## 19. Referências
+
+- Documentação oficial da Microsoft: [C#](https://docs.microsoft.com/dotnet/csharp/), [ASP.NET Core](https://docs.microsoft.com/aspnet/core/), [.NET 10](https://learn.microsoft.com/dotnet/).
+- [What's new in C# 13](https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-13)
+- [What's new in .NET 10](https://learn.microsoft.com/dotnet/core/whats-new/dotnet-10)
+- Guias de melhores práticas em routing, controllers, models e componentes de API.
+
+---
+
+## 20. Validação por Três Perspectivas
+
+### Revisor 1 — Foco em Convenções e Consistência
+
+**Aprovação:** ✅ Documento adequado como padrão de desenvolvimento.
+
+**Pontos fortes:** Convenções de nomenclatura e estilo alinhadas à Microsoft; FluentValidation com regra clara (apenas body); JSON camelCase e Refit bem definidos; configuração sensível fora de arquivos versionados.
+
+**Sugestão:** Manter exemplos genéricos (CreateUser, ExternalAuthApi) para não amarrar a um domínio.
+
+**Conclusão:** Recomendado como guia de desenvolvimento .NET universal.
+
+---
+
+### Revisor 2 — Foco em Praticidade e DX
+
+**Aprovação:** ✅ Utilizável no dia a dia por qualquer time .NET.
+
+**Pontos fortes:** Seções numeradas e objetivas; exemplos de código curtos; build/testes/cobertura como critério de conclusão; Refit e FluentValidation com exemplos aplicáveis em qualquer projeto.
+
+**Sugestão:** Em projetos que não usem Clean Architecture, a seção de validators pode ser lida como "validar DTOs/request models antes da lógica de aplicação", mantendo a regra "apenas campos do body".
+
+**Conclusão:** Aprovado para adoção como referência de desenvolvimento.
+
+---
+
+### Revisor 3 — Foco em Qualidade e Operação
+
+**Aprovação:** ✅ Alinhado a qualidade e operação.
+
+**Pontos fortes:** Exigência de build e testes antes de finalizar; cobertura ≥ 80%; middleware de exceções e respostas padronizadas; configuração sensível por variáveis de ambiente; segurança e documentação (Swagger) explícitas.
+
+**Sugestão:** Em ambientes com Sonar ou similares, este guia reduz riscos de segredos em repositório e de respostas de erro inconsistentes.
+
+**Conclusão:** Aprovado como padrão de excelência para desenvolvimento .NET.
