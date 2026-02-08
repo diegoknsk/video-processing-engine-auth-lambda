@@ -1,0 +1,46 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A2FE74E1-B743-11E0-AE65-08002B2EC713}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A2FE74E2-B743-11E0-AE65-08002B2EC713}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoProcessing.Auth.Api", "src\VideoProcessing.Auth.Api\VideoProcessing.Auth.Api.csproj", "{83BCB3FF-01C7-4776-B206-4AF233032369}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoProcessing.Auth.Application", "src\VideoProcessing.Auth.Application\VideoProcessing.Auth.Application.csproj", "{062A8732-09CA-423E-AADB-7BBAD81EA3EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoProcessing.Auth.Infra", "src\VideoProcessing.Auth.Infra\VideoProcessing.Auth.Infra.csproj", "{8DE5CF32-14C3-4F1E-BD91-FF05C45AAFCF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoProcessing.Auth.Tests.Unit", "tests\VideoProcessing.Auth.Tests.Unit\VideoProcessing.Auth.Tests.Unit.csproj", "{06994AB1-5F78-44AF-A93C-043C8B531596}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83BCB3FF-01C7-4776-B206-4AF233032369}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83BCB3FF-01C7-4776-B206-4AF233032369}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83BCB3FF-01C7-4776-B206-4AF233032369}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83BCB3FF-01C7-4776-B206-4AF233032369}.Release|Any CPU.Build.0 = Release|Any CPU
+		{062A8732-09CA-423E-AADB-7BBAD81EA3EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{062A8732-09CA-423E-AADB-7BBAD81EA3EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{062A8732-09CA-423E-AADB-7BBAD81EA3EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{062A8732-09CA-423E-AADB-7BBAD81EA3EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DE5CF32-14C3-4F1E-BD91-FF05C45AAFCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DE5CF32-14C3-4F1E-BD91-FF05C45AAFCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DE5CF32-14C3-4F1E-BD91-FF05C45AAFCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DE5CF32-14C3-4F1E-BD91-FF05C45AAFCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06994AB1-5F78-44AF-A93C-043C8B531596}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06994AB1-5F78-44AF-A93C-043C8B531596}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06994AB1-5F78-44AF-A93C-043C8B531596}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06994AB1-5F78-44AF-A93C-043C8B531596}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{83BCB3FF-01C7-4776-B206-4AF233032369} = {A2FE74E1-B743-11E0-AE65-08002B2EC713}
+		{062A8732-09CA-423E-AADB-7BBAD81EA3EE} = {A2FE74E1-B743-11E0-AE65-08002B2EC713}
+		{8DE5CF32-14C3-4F1E-BD91-FF05C45AAFCF} = {A2FE74E1-B743-11E0-AE65-08002B2EC713}
+		{06994AB1-5F78-44AF-A93C-043C8B531596} = {A2FE74E2-B743-11E0-AE65-08002B2EC713}
+	EndGlobalSection
+EndGlobal
