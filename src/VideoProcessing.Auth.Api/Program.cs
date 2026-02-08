@@ -1,8 +1,11 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.AspNetCoreServer.Hosting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +24,43 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
+
+// OpenAPI / Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Video Processing Auth API",
+        Version = "v1",
+        Description = "API de autenticação para Video Processing Engine usando Amazon Cognito",
+        Contact = new OpenApiContact
+        {
+            Name = "Equipe Video Processing",
+            Email = "team@videoprocessing.example.com"
+        }
+    });
+    
+    // Incluir XML comments
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+    
+    // Configuração de base path para API Gateway (pode ser configurado via variável de ambiente)
+    // Exemplo comentado para referência:
+    // var baseUrl = builder.Configuration["API_BASE_URL"] ?? "http://localhost:5000";
+    // options.AddServer(new OpenApiServer 
+    // { 
+    //     Url = baseUrl,
+    //     Description = "API Gateway endpoint"
+    // });
+    // Para múltiplos stages:
+    // options.AddServer(new OpenApiServer { Url = "https://api.example.com/prod", Description = "Production (API Gateway stage: prod)" });
+    // options.AddServer(new OpenApiServer { Url = "https://api.example.com/dev", Description = "Development (API Gateway stage: dev)" });
+});
 
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
@@ -62,6 +102,18 @@ app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GlobalExceptionMiddleware>
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthorization();
+
+// Swagger / OpenAPI
+app.UseSwagger();
+
+// Scalar UI - Documentação interativa (aponta para o JSON gerado pelo Swashbuckle)
+app.MapScalarApiReference(options =>
+{
+    options.Title = "Video Processing Auth API";
+    options.Theme = ScalarTheme.Default;
+    options.WithOpenApiRoutePattern("/swagger/v1/swagger.json");
+});
+
 app.MapControllers();
 
 app.Run();
