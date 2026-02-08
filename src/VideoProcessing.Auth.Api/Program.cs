@@ -99,7 +99,13 @@ var app = builder.Build();
 
 // Middleware pipeline
 app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GlobalExceptionMiddleware>();
-app.UseHttpsRedirection();
+
+// HTTPS redirection apenas local: no Lambda o API Gateway já faz HTTPS
+if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME")))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseAuthorization();
 

@@ -74,6 +74,6 @@ Documentar no README todas as variáveis de ambiente (GitHub Variables), secrets
 - [ ] Estrutura do workflow preparada para futura integração com verificação de cobertura de testes (comentários ou estrutura de jobs)
 
 ## Rastreamento (dev tracking)
-- **Início:** —
+- **Início:** 08/02/2026, às 19:05 (Brasília)
 - **Fim:** —
 - **Tempo total de desenvolvimento:** —
