@@ -13,6 +13,7 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 builder.Services.AddControllers(options =>
     {
         options.Filters.Add<VideoProcessing.Auth.Api.Filters.ValidationFilter>();
+        options.Filters.Add<VideoProcessing.Auth.Api.Filters.ApiResponseFilter>();
     })
     .AddJsonOptions(options =>
     {
@@ -57,6 +58,7 @@ builder.Services.AddScoped<VideoProcessing.Auth.Application.UseCases.Auth.Create
 var app = builder.Build();
 
 // Middleware pipeline
+app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthorization();

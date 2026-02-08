@@ -1,8 +1,8 @@
 # Storie-04: Filtros Globais, Tratamento de Erros e Health Check
 
 ## Status
-- **Estado:** 🔄 Em desenvolvimento
-- **Data de Conclusão:** —
+- **Estado:** ✅ Concluída
+- **Data de Conclusão:** 07/02/2026
 
 ## Descrição
 Como desenvolvedor do sistema, quero implementar filtros globais para padronizar respostas de sucesso e erro da API, middleware de exceções para capturar e mapear erros do Cognito e exceções gerais, e endpoint de health check, para garantir consistência, observabilidade e fácil monitoramento da aplicação.
@@ -30,22 +30,22 @@ Implementar ApiResponseFilter para encapsular automaticamente todas as respostas
 - Riscos/Pré-condições: Conhecimento de action filters e middleware no ASP.NET Core; familiaridade com exceções do AWS SDK (AmazonCognitoIdentityProviderException)
 
 ## Subtasks
-- [Subtask 01: Criar modelos ApiResponse e ApiErrorResponse](./subtask/Subtask-01-Criar_ApiResponse_Models.md)
-- [Subtask 02: Implementar ApiResponseFilter](./subtask/Subtask-02-Implementar_ApiResponseFilter.md)
-- [Subtask 03: Implementar GlobalExceptionMiddleware](./subtask/Subtask-03-Implementar_GlobalExceptionMiddleware.md)
-- [Subtask 04: Criar endpoint GET health](./subtask/Subtask-04-Criar_Endpoint_Health.md)
-- [Subtask 05: Testes unitários dos filtros e health](./subtask/Subtask-05-Testes_Unitarios_Filtros_Health.md)
+- [x] [Subtask 01: Criar modelos ApiResponse e ApiErrorResponse](./subtask/Subtask-01-Criar_ApiResponse_Models.md)
+- [x] [Subtask 02: Implementar ApiResponseFilter](./subtask/Subtask-02-Implementar_ApiResponseFilter.md)
+- [x] [Subtask 03: Implementar GlobalExceptionMiddleware](./subtask/Subtask-03-Implementar_GlobalExceptionMiddleware.md)
+- [x] [Subtask 04: Criar endpoint GET health](./subtask/Subtask-04-Criar_Endpoint_Health.md)
+- [x] [Subtask 05: Testes unitários dos filtros e health](./subtask/Subtask-05-Testes_Unitarios_Filtros_Health.md)
 
 ## Critérios de Aceite da História
-- [ ] Todas as respostas de sucesso (200, 201) são encapsuladas automaticamente em `{ "success": true, "data": {...}, "timestamp": "..." }` pelo ApiResponseFilter
-- [ ] GlobalExceptionMiddleware captura exceções do Cognito (`NotAuthorizedException` → 401, `UsernameExistsException` → 409, `InvalidPasswordException` → 422, etc.) e retorna `{ "success": false, "error": { "code": "...", "message": "..." }, "timestamp": "..." }`
-- [ ] Mensagens de erro são amigáveis e não vazam detalhes internos (ex.: "Credenciais inválidas" para `UserNotFoundException` e `NotAuthorizedException`)
-- [ ] GET /health retorna 200 OK com `{ "status": "Healthy", "timestamp": "..." }`
-- [ ] Logs estruturados registram exceções capturadas pelo middleware global (sem dados sensíveis)
-- [ ] Testes unitários: cobertura dos filtros (simular respostas e exceções), middleware (simular diferentes exceções e verificar resposta HTTP) e endpoint de health
-- [ ] `dotnet build` e `dotnet test` executam sem erros; todos os testes passando
+- [x] Todas as respostas de sucesso (200, 201) são encapsuladas automaticamente em `{ "success": true, "data": {...}, "timestamp": "..." }` pelo ApiResponseFilter
+- [x] GlobalExceptionMiddleware captura exceções do Cognito (`NotAuthorizedException` → 401, `UsernameExistsException` → 409, `InvalidPasswordException` → 422, etc.) e retorna `{ "success": false, "error": { "code": "...", "message": "..." }, "timestamp": "..." }`
+- [x] Mensagens de erro são amigáveis e não vazam detalhes internos (ex.: "Credenciais inválidas" para `UserNotFoundException` e `NotAuthorizedException`)
+- [x] GET /health retorna 200 OK com `{ "status": "Healthy", "timestamp": "..." }`
+- [x] Logs estruturados registram exceções capturadas pelo middleware global (sem dados sensíveis)
+- [x] Testes unitários: cobertura dos filtros (simular respostas e exceções), middleware (simular diferentes exceções e verificar resposta HTTP) e endpoint de health
+- [x] `dotnet build` e `dotnet test` executam sem erros; todos os testes passando (20 testes passaram)
 
 ## Rastreamento (dev tracking)
-- **Início:** —
-- **Fim:** —
-- **Tempo total de desenvolvimento:** —
+- **Início:** 07/02/2026, às 21:00 (Brasília)
+- **Fim:** 07/02/2026, às 21:02 (Brasília)
+- **Tempo total de desenvolvimento:** 2min
