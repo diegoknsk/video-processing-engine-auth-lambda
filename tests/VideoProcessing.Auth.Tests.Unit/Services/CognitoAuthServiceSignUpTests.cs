@@ -26,9 +26,8 @@ public class CognitoAuthServiceSignUpTests
         _options = new CognitoOptions
         {
             Region = "us-east-1",
-            AppClientId = "test-client-id",
-            AppClientSecret = "test-client-secret",
-            UserPoolId = "test-pool-id"
+            UserPoolId = "test-pool-id",
+            ClientId = "test-client-id"
         };
 
         _optionsMock.Setup(x => x.Value).Returns(_options);
@@ -38,221 +37,244 @@ public class CognitoAuthServiceSignUpTests
     public async Task SignUpAsync_WhenSignUpSucceeds_ShouldReturnCreateUserOutput()
     {
         // Arrange
-        var username = "testuser";
-        var password = "password123";
+        var name = "Diego";
         var email = "test@example.com";
+        var password = "password123";
         var userSub = "user-sub-123";
 
-        var response = new SignUpResponse
+        var adminCreateUserResponse = new AdminCreateUserResponse
         {
-            UserSub = userSub,
-            UserConfirmed = true
+            User = new UserType
+            {
+                Username = email,
+                Attributes = new List<AttributeType>
+                {
+                    new AttributeType { Name = "sub", Value = userSub },
+                    new AttributeType { Name = "email", Value = email },
+                    new AttributeType { Name = "name", Value = name }
+                }
+            }
         };
 
         _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminCreateUserResponse);
+
+        _cognitoClientMock
+            .Setup(x => x.AdminSetUserPasswordAsync(It.IsAny<AdminSetUserPasswordRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AdminSetUserPasswordResponse());
 
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act
-        var result = await service.SignUpAsync(username, password, email);
+        var result = await service.SignUpAsync(name, email, password);
 
         // Assert
         result.Should().NotBeNull();
         result.UserId.Should().Be(userSub);
-        result.Username.Should().Be(username);
+        result.Username.Should().Be(email);
         result.UserConfirmed.Should().BeTrue();
         result.ConfirmationRequired.Should().BeFalse();
     }
 
     [Fact]
-    public async Task SignUpAsync_WhenUserConfirmedIsFalse_ShouldSetConfirmationRequiredToTrue()
+    public async Task SignUpAsync_WhenAdminCreateUserSucceeds_ShouldAlwaysReturnUserConfirmedTrue()
     {
         // Arrange
-        var username = "testuser";
-        var password = "password123";
+        var name = "Diego";
         var email = "test@example.com";
+        var password = "password123";
         var userSub = "user-sub-123";
 
-        var response = new SignUpResponse
+        var adminCreateUserResponse = new AdminCreateUserResponse
         {
-            UserSub = userSub,
-            UserConfirmed = false
+            User = new UserType
+            {
+                Username = email,
+                Attributes = new List<AttributeType>
+                {
+                    new AttributeType { Name = "sub", Value = userSub },
+                    new AttributeType { Name = "email", Value = email },
+                    new AttributeType { Name = "name", Value = name }
+                }
+            }
         };
 
         _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminCreateUserResponse);
+
+        _cognitoClientMock
+            .Setup(x => x.AdminSetUserPasswordAsync(It.IsAny<AdminSetUserPasswordRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AdminSetUserPasswordResponse());
 
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act
-        var result = await service.SignUpAsync(username, password, email);
+        var result = await service.SignUpAsync(name, email, password);
 
         // Assert
-        result.UserConfirmed.Should().BeFalse();
-        result.ConfirmationRequired.Should().BeTrue();
+        // Com AdminCreateUser + AdminSetUserPassword, o usuário sempre fica confirmado
+        result.UserConfirmed.Should().BeTrue();
+        result.ConfirmationRequired.Should().BeFalse();
     }
 
     [Fact]
     public async Task SignUpAsync_WhenUsernameExistsException_ShouldThrowException()
     {
         // Arrange
-        var username = "existinguser";
-        var password = "password123";
+        var name = "Diego";
         var email = "existing@example.com";
+        var password = "password123";
 
         _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UsernameExistsException("User already exists"));
 
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act & Assert
         await Assert.ThrowsAsync<UsernameExistsException>(
-            () => service.SignUpAsync(username, password, email));
+            () => service.SignUpAsync(name, email, password));
     }
 
     [Fact]
-    public async Task SignUpAsync_WhenInvalidPasswordException_ShouldThrowException()
+    public async Task SignUpAsync_WhenInvalidPasswordExceptionOnAdminCreateUser_ShouldThrowException()
     {
         // Arrange
-        var username = "testuser";
-        var password = "weak";
+        var name = "Diego";
         var email = "test@example.com";
+        var password = "weak";
 
+        // InvalidPasswordException pode ser lançada no AdminCreateUser
         _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidPasswordException("Password does not meet requirements"));
 
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidPasswordException>(
-            () => service.SignUpAsync(username, password, email));
+            () => service.SignUpAsync(name, email, password));
+    }
+
+    [Fact]
+    public async Task SignUpAsync_WhenInvalidPasswordExceptionOnAdminSetUserPassword_ShouldThrowException()
+    {
+        // Arrange
+        var name = "Diego";
+        var email = "test@example.com";
+        var password = "weak";
+        var userSub = "user-sub-123";
+
+        var adminCreateUserResponse = new AdminCreateUserResponse
+        {
+            User = new UserType
+            {
+                Username = email,
+                Attributes = new List<AttributeType>
+                {
+                    new AttributeType { Name = "sub", Value = userSub },
+                    new AttributeType { Name = "email", Value = email },
+                    new AttributeType { Name = "name", Value = name }
+                }
+            }
+        };
+
+        // AdminCreateUser sucede, mas AdminSetUserPassword falha com senha inválida
+        _cognitoClientMock
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminCreateUserResponse);
+
+        _cognitoClientMock
+            .Setup(x => x.AdminSetUserPasswordAsync(It.IsAny<AdminSetUserPasswordRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidPasswordException("Password does not meet requirements"));
+
+        var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidPasswordException>(
+            () => service.SignUpAsync(name, email, password));
     }
 
     [Fact]
     public async Task SignUpAsync_WhenInvalidParameterException_ShouldThrowArgumentException()
     {
         // Arrange
-        var username = "testuser";
+        var name = "Diego";
+        var email = "test@example.com";
         var password = "password123";
-        var email = "invalid-email";
 
         _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidParameterException("Invalid parameter"));
 
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => service.SignUpAsync(username, password, email));
+            () => service.SignUpAsync(name, email, password));
 
         exception.Message.Should().Be("Parâmetro inválido.");
     }
 
     [Fact]
-    public async Task SignUpAsync_WhenAppClientSecretIsPresent_ShouldIncludeSecretHashInRequest()
+    public async Task SignUpAsync_ShouldCallAdminCreateUserWithCorrectParameters()
     {
         // Arrange
-        var username = "testuser";
+        var name = "Diego";
+        var email = "diegosa@email.com";
         var password = "password123";
-        var email = "test@example.com";
+        var userSub = "user-sub-123";
 
-        var response = new SignUpResponse
+        AdminCreateUserRequest? capturedCreateRequest = null;
+        AdminSetUserPasswordRequest? capturedPasswordRequest = null;
+
+        var adminCreateUserResponse = new AdminCreateUserResponse
         {
-            UserSub = "user-sub-123",
-            UserConfirmed = true
+            User = new UserType
+            {
+                Username = email,
+                Attributes = new List<AttributeType>
+                {
+                    new AttributeType { Name = "sub", Value = userSub },
+                    new AttributeType { Name = "email", Value = email },
+                    new AttributeType { Name = "name", Value = name }
+                }
+            }
         };
 
-        SignUpRequest? capturedRequest = null;
         _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<SignUpRequest, CancellationToken>((req, ct) => capturedRequest = req)
-            .ReturnsAsync(response);
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<AdminCreateUserRequest, CancellationToken>((req, ct) => capturedCreateRequest = req)
+            .ReturnsAsync(adminCreateUserResponse);
+
+        _cognitoClientMock
+            .Setup(x => x.AdminSetUserPasswordAsync(It.IsAny<AdminSetUserPasswordRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<AdminSetUserPasswordRequest, CancellationToken>((req, ct) => capturedPasswordRequest = req)
+            .ReturnsAsync(new AdminSetUserPasswordResponse());
 
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act
-        await service.SignUpAsync(username, password, email);
+        await service.SignUpAsync(name, email, password);
 
-        // Assert
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.SecretHash.Should().NotBeNullOrEmpty();
-    }
+        // Assert - AdminCreateUser
+        capturedCreateRequest.Should().NotBeNull();
+        capturedCreateRequest!.UserPoolId.Should().Be(_options.UserPoolId);
+        capturedCreateRequest.Username.Should().Be(email);
+        capturedCreateRequest.TemporaryPassword.Should().Be(password);
+        capturedCreateRequest.MessageAction.Should().Be(MessageActionType.SUPPRESS);
+        capturedCreateRequest.UserAttributes.Should().NotBeNull();
+        capturedCreateRequest.UserAttributes.Should().Contain(attr => attr.Name == "email" && attr.Value == email);
+        capturedCreateRequest.UserAttributes.Should().Contain(attr => attr.Name == "name" && attr.Value == name);
+        capturedCreateRequest.UserAttributes.Should().Contain(attr => attr.Name == "email_verified" && attr.Value == "true");
 
-    [Fact]
-    public async Task SignUpAsync_WhenAppClientSecretIsEmpty_ShouldNotIncludeSecretHashInRequest()
-    {
-        // Arrange
-        var optionsWithoutSecret = new CognitoOptions
-        {
-            Region = "us-east-1",
-            AppClientId = "test-client-id",
-            AppClientSecret = string.Empty,
-            UserPoolId = "test-pool-id"
-        };
-
-        var optionsMockWithoutSecret = new Mock<IOptions<CognitoOptions>>();
-        optionsMockWithoutSecret.Setup(x => x.Value).Returns(optionsWithoutSecret);
-
-        var username = "testuser";
-        var password = "password123";
-        var email = "test@example.com";
-
-        var response = new SignUpResponse
-        {
-            UserSub = "user-sub-123",
-            UserConfirmed = true
-        };
-
-        SignUpRequest? capturedRequest = null;
-        _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<SignUpRequest, CancellationToken>((req, ct) => capturedRequest = req)
-            .ReturnsAsync(response);
-
-        var service = new CognitoAuthService(_cognitoClientMock.Object, optionsMockWithoutSecret.Object, _loggerMock.Object);
-
-        // Act
-        await service.SignUpAsync(username, password, email);
-
-        // Assert
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.SecretHash.Should().BeNullOrEmpty();
-    }
-
-    [Fact]
-    public async Task SignUpAsync_ShouldIncludeEmailInUserAttributes()
-    {
-        // Arrange
-        var username = "testuser";
-        var password = "password123";
-        var email = "test@example.com";
-
-        var response = new SignUpResponse
-        {
-            UserSub = "user-sub-123",
-            UserConfirmed = true
-        };
-
-        SignUpRequest? capturedRequest = null;
-        _cognitoClientMock
-            .Setup(x => x.SignUpAsync(It.IsAny<SignUpRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<SignUpRequest, CancellationToken>((req, ct) => capturedRequest = req)
-            .ReturnsAsync(response);
-
-        var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
-
-        // Act
-        await service.SignUpAsync(username, password, email);
-
-        // Assert
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.UserAttributes.Should().NotBeNull();
-        capturedRequest.UserAttributes.Should().Contain(attr => attr.Name == "email" && attr.Value == email);
+        // Assert - AdminSetUserPassword
+        capturedPasswordRequest.Should().NotBeNull();
+        capturedPasswordRequest!.UserPoolId.Should().Be(_options.UserPoolId);
+        capturedPasswordRequest.Username.Should().Be(email);
+        capturedPasswordRequest.Password.Should().Be(password);
+        capturedPasswordRequest.Permanent.Should().BeTrue();
     }
 }

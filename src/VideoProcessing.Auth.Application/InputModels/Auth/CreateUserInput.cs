@@ -6,17 +6,17 @@ namespace VideoProcessing.Auth.Application.InputModels.Auth;
 public record CreateUserInput
 {
     /// <summary>
-    /// Nome de usuário para criação da conta.
+    /// Nome do usuário (ex.: "Diego").
     /// </summary>
-    public string Username { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Email do usuário (identificador de login no Cognito quando username_attributes = ["email"]).
+    /// </summary>
+    public string Email { get; init; } = string.Empty;
 
     /// <summary>
     /// Senha do usuário.
     /// </summary>
     public string Password { get; init; } = string.Empty;
-
-    /// <summary>
-    /// Email do usuário.
-    /// </summary>
-    public string Email { get; init; } = string.Empty;
 }

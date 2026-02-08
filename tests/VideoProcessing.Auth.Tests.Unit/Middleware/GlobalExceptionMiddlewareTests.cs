@@ -60,6 +60,24 @@ public class GlobalExceptionMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenUserNotConfirmedException_ShouldReturn403WithUserNotConfirmed()
+    {
+        // Arrange
+        var context = CreateHttpContext();
+        _nextMock.Setup(x => x(It.IsAny<HttpContext>())).ThrowsAsync(new UserNotConfirmedException("User is not confirmed"));
+
+        // Act
+        await _middleware.InvokeAsync(context);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var errorResponse = await DeserializeErrorResponse(context);
+        errorResponse.Success.Should().BeFalse();
+        errorResponse.Error.Code.Should().Be("UserNotConfirmed");
+        errorResponse.Error.Message.Should().Be("Conta não confirmada. Verifique seu e-mail e confirme o cadastro.");
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenUsernameExistsException_ShouldReturn409WithUserAlreadyExists()
     {
         // Arrange

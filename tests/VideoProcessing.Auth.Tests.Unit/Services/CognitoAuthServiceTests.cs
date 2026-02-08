@@ -27,9 +27,8 @@ public class CognitoAuthServiceTests
         _options = new CognitoOptions
         {
             Region = "us-east-1",
-            AppClientId = "test-client-id",
-            AppClientSecret = "test-client-secret",
-            UserPoolId = "test-pool-id"
+            UserPoolId = "test-pool-id",
+            ClientId = "test-client-id"
         };
 
         _optionsMock.Setup(x => x.Value).Returns(_options);
@@ -39,7 +38,7 @@ public class CognitoAuthServiceTests
     public async Task LoginAsync_WhenLoginSucceeds_ShouldReturnLoginOutput()
     {
         // Arrange
-        var username = "testuser";
+        var email = "test@example.com";
         var password = "password123";
         var accessToken = "access-token";
         var idToken = "id-token";
@@ -66,7 +65,7 @@ public class CognitoAuthServiceTests
         var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
 
         // Act
-        var result = await service.LoginAsync(username, password);
+        var result = await service.LoginAsync(email, password);
 
         // Assert
         result.Should().NotBeNull();
@@ -81,7 +80,7 @@ public class CognitoAuthServiceTests
     public async Task LoginAsync_WhenNotAuthorizedException_ShouldThrowUnauthorizedAccessException()
     {
         // Arrange
-        var username = "testuser";
+        var email = "test@example.com";
         var password = "wrongpassword";
 
         _cognitoClientMock
@@ -92,7 +91,7 @@ public class CognitoAuthServiceTests
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => service.LoginAsync(username, password));
+            () => service.LoginAsync(email, password));
 
         exception.Message.Should().Be("Credenciais inválidas");
     }
@@ -101,7 +100,7 @@ public class CognitoAuthServiceTests
     public async Task LoginAsync_WhenUserNotFoundException_ShouldThrowUnauthorizedAccessException()
     {
         // Arrange
-        var username = "nonexistentuser";
+        var email = "nonexistent@example.com";
         var password = "password123";
 
         _cognitoClientMock
@@ -112,7 +111,7 @@ public class CognitoAuthServiceTests
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => service.LoginAsync(username, password));
+            () => service.LoginAsync(email, password));
 
         exception.Message.Should().Be("Credenciais inválidas");
     }
@@ -121,7 +120,7 @@ public class CognitoAuthServiceTests
     public async Task LoginAsync_WhenAuthenticationResultIsNull_ShouldThrowUnauthorizedAccessException()
     {
         // Arrange
-        var username = "testuser";
+        var email = "test@example.com";
         var password = "password123";
 
         var response = new InitiateAuthResponse
@@ -137,94 +136,9 @@ public class CognitoAuthServiceTests
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => service.LoginAsync(username, password));
+            () => service.LoginAsync(email, password));
 
         exception.Message.Should().Be("Credenciais inválidas");
     }
 
-    [Fact]
-    public async Task LoginAsync_WhenAppClientSecretIsPresent_ShouldIncludeSecretHashInRequest()
-    {
-        // Arrange
-        var username = "testuser";
-        var password = "password123";
-
-        var authResult = new AuthenticationResultType
-        {
-            AccessToken = "access-token",
-            IdToken = "id-token",
-            RefreshToken = "refresh-token",
-            ExpiresIn = 3600,
-            TokenType = "Bearer"
-        };
-
-        var response = new InitiateAuthResponse
-        {
-            AuthenticationResult = authResult
-        };
-
-        InitiateAuthRequest? capturedRequest = null;
-        _cognitoClientMock
-            .Setup(x => x.InitiateAuthAsync(It.IsAny<InitiateAuthRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<InitiateAuthRequest, CancellationToken>((req, ct) => capturedRequest = req)
-            .ReturnsAsync(response);
-
-        var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
-
-        // Act
-        await service.LoginAsync(username, password);
-
-        // Assert
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.AuthParameters.Should().ContainKey("SECRET_HASH");
-        capturedRequest.AuthParameters["SECRET_HASH"].Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
-    public async Task LoginAsync_WhenAppClientSecretIsEmpty_ShouldNotIncludeSecretHashInRequest()
-    {
-        // Arrange
-        var optionsWithoutSecret = new CognitoOptions
-        {
-            Region = "us-east-1",
-            AppClientId = "test-client-id",
-            AppClientSecret = string.Empty,
-            UserPoolId = "test-pool-id"
-        };
-
-        var optionsMockWithoutSecret = new Mock<IOptions<CognitoOptions>>();
-        optionsMockWithoutSecret.Setup(x => x.Value).Returns(optionsWithoutSecret);
-
-        var username = "testuser";
-        var password = "password123";
-
-        var authResult = new AuthenticationResultType
-        {
-            AccessToken = "access-token",
-            IdToken = "id-token",
-            RefreshToken = "refresh-token",
-            ExpiresIn = 3600,
-            TokenType = "Bearer"
-        };
-
-        var response = new InitiateAuthResponse
-        {
-            AuthenticationResult = authResult
-        };
-
-        InitiateAuthRequest? capturedRequest = null;
-        _cognitoClientMock
-            .Setup(x => x.InitiateAuthAsync(It.IsAny<InitiateAuthRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<InitiateAuthRequest, CancellationToken>((req, ct) => capturedRequest = req)
-            .ReturnsAsync(response);
-
-        var service = new CognitoAuthService(_cognitoClientMock.Object, optionsMockWithoutSecret.Object, _loggerMock.Object);
-
-        // Act
-        await service.LoginAsync(username, password);
-
-        // Assert
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.AuthParameters.Should().NotContainKey("SECRET_HASH");
-    }
 }

@@ -81,11 +81,37 @@ Configure as variáveis de ambiente ou `appsettings.json`:
   "Cognito": {
     "Region": "us-east-1",
     "UserPoolId": "us-east-1_XXXXXXXXX",
-    "AppClientId": "xxxxxxxxxxxxxxxxxx",
-    "AppClientSecret": "xxxxxxxxxxxxxxxxxx" // Opcional
+    "ClientId": "xxxxxxxxxxxxxxxxxx"
   }
 }
 ```
+
+### Permissões IAM Necessárias
+
+A aplicação requer credenciais IAM com as seguintes permissões no Amazon Cognito User Pool:
+
+- `cognito-idp:AdminCreateUser` - Necessária para criar usuários via endpoint `POST /auth/users/create`
+- `cognito-idp:AdminSetUserPassword` - Necessária para definir senha permanente após criação do usuário
+
+**Exemplo de política IAM mínima:**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminSetUserPassword"
+      ],
+      "Resource": "arn:aws:cognito-idp:REGION:ACCOUNT_ID:userpool/USER_POOL_ID"
+    }
+  ]
+}
+```
+
+**Nota:** Essas permissões são necessárias para o fluxo de criação de usuário sem confirmação de email (AdminCreateUser + AdminSetUserPassword), que permite login imediato após o cadastro.
 
 ## 📖 Mais Informações
 

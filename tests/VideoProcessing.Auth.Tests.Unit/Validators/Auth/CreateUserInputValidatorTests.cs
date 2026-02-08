@@ -15,66 +15,95 @@ public class CreateUserInputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenUsernameIsEmpty_ShouldHaveValidationError()
+    public void Validate_WhenNameIsEmpty_ShouldHaveValidationError()
     {
         // Arrange
-        var input = new CreateUserInput { Username = string.Empty, Password = "ValidPassword123", Email = "user@example.com" };
+        var input = new CreateUserInput { Name = string.Empty, Email = "user@example.com", Password = "ValidPassword123" };
 
         // Act
         var result = _validator.TestValidate(input);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Username)
-            .WithErrorMessage("Username é obrigatório.");
+        result.ShouldHaveValidationErrorFor(x => x.Name)
+            .WithErrorMessage("Name é obrigatório.");
     }
 
     [Fact]
-    public void Validate_WhenUsernameExceedsMaxLength_ShouldHaveValidationError()
+    public void Validate_WhenNameExceedsMaxLength_ShouldHaveValidationError()
     {
         // Arrange
-        var longUsername = new string('a', 129);
-        var input = new CreateUserInput { Username = longUsername, Password = "ValidPassword123", Email = "user@example.com" };
+        var longName = new string('a', 257);
+        var input = new CreateUserInput { Name = longName, Email = "user@example.com", Password = "ValidPassword123" };
 
         // Act
         var result = _validator.TestValidate(input);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Username)
-            .WithErrorMessage("Username deve ter no máximo 128 caracteres.");
+        result.ShouldHaveValidationErrorFor(x => x.Name)
+            .WithErrorMessage("Name deve ter no máximo 256 caracteres.");
     }
 
     [Fact]
-    public void Validate_WhenUsernameContainsInvalidCharacters_ShouldHaveValidationError()
+    public void Validate_WhenEmailIsEmpty_ShouldHaveValidationError()
     {
         // Arrange
-        var input = new CreateUserInput { Username = "user@123", Password = "ValidPassword123", Email = "user@example.com" };
+        var input = new CreateUserInput { Name = "Diego", Email = string.Empty, Password = "ValidPassword123" };
 
         // Act
         var result = _validator.TestValidate(input);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Username)
-            .WithErrorMessage("Username pode conter apenas letras, números, _ e -.");
+        result.ShouldHaveValidationErrorFor(x => x.Email)
+            .WithErrorMessage("Email é obrigatório.");
     }
 
     [Fact]
-    public void Validate_WhenUsernameIsValid_ShouldNotHaveValidationError()
+    public void Validate_WhenEmailIsInvalid_ShouldHaveValidationError()
     {
         // Arrange
-        var input = new CreateUserInput { Username = "user_test-123", Password = "ValidPassword123", Email = "user@example.com" };
+        var input = new CreateUserInput { Name = "Diego", Email = "notanemail", Password = "ValidPassword123" };
 
         // Act
         var result = _validator.TestValidate(input);
 
         // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.Username);
+        result.ShouldHaveValidationErrorFor(x => x.Email)
+            .WithErrorMessage("Email deve ser um formato válido.");
+    }
+
+    [Fact]
+    public void Validate_WhenEmailExceedsMaxLength_ShouldHaveValidationError()
+    {
+        // Arrange
+        var longEmail = "a" + new string('b', 250) + "@example.com";
+        var input = new CreateUserInput { Name = "Diego", Email = longEmail, Password = "ValidPassword123" };
+
+        // Act
+        var result = _validator.TestValidate(input);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Email)
+            .WithErrorMessage("Email deve ter no máximo 256 caracteres.");
+    }
+
+    [Fact]
+    public void Validate_WhenEmailIsValid_ShouldNotHaveValidationError()
+    {
+        // Arrange
+        var input = new CreateUserInput { Name = "Diego", Email = "user@example.com", Password = "ValidPassword123" };
+
+        // Act
+        var result = _validator.TestValidate(input);
+
+        // Assert
+        result.ShouldNotHaveValidationErrorFor(x => x.Email);
     }
 
     [Fact]
     public void Validate_WhenPasswordIsEmpty_ShouldHaveValidationError()
     {
         // Arrange
-        var input = new CreateUserInput { Username = "testuser", Password = string.Empty, Email = "user@example.com" };
+        var input = new CreateUserInput { Name = "Diego", Email = "user@example.com", Password = string.Empty };
 
         // Act
         var result = _validator.TestValidate(input);
@@ -88,7 +117,7 @@ public class CreateUserInputValidatorTests
     public void Validate_WhenPasswordIsTooShort_ShouldHaveValidationError()
     {
         // Arrange
-        var input = new CreateUserInput { Username = "testuser", Password = "1234567", Email = "user@example.com" };
+        var input = new CreateUserInput { Name = "Diego", Email = "user@example.com", Password = "1234567" };
 
         // Act
         var result = _validator.TestValidate(input);
@@ -103,7 +132,7 @@ public class CreateUserInputValidatorTests
     {
         // Arrange
         var longPassword = new string('a', 257);
-        var input = new CreateUserInput { Username = "testuser", Password = longPassword, Email = "user@example.com" };
+        var input = new CreateUserInput { Name = "Diego", Email = "user@example.com", Password = longPassword };
 
         // Act
         var result = _validator.TestValidate(input);
@@ -114,66 +143,10 @@ public class CreateUserInputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenEmailIsEmpty_ShouldHaveValidationError()
-    {
-        // Arrange
-        var input = new CreateUserInput { Username = "testuser", Password = "ValidPassword123", Email = string.Empty };
-
-        // Act
-        var result = _validator.TestValidate(input);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Email)
-            .WithErrorMessage("Email é obrigatório.");
-    }
-
-    [Fact]
-    public void Validate_WhenEmailIsInvalid_ShouldHaveValidationError()
-    {
-        // Arrange
-        var input = new CreateUserInput { Username = "testuser", Password = "ValidPassword123", Email = "notanemail" };
-
-        // Act
-        var result = _validator.TestValidate(input);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Email)
-            .WithErrorMessage("Email em formato inválido.");
-    }
-
-    [Fact]
-    public void Validate_WhenEmailExceedsMaxLength_ShouldHaveValidationError()
-    {
-        // Arrange
-        var longEmail = "a" + new string('b', 250) + "@example.com";
-        var input = new CreateUserInput { Username = "testuser", Password = "ValidPassword123", Email = longEmail };
-
-        // Act
-        var result = _validator.TestValidate(input);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Email)
-            .WithErrorMessage("Email deve ter no máximo 256 caracteres.");
-    }
-
-    [Fact]
-    public void Validate_WhenEmailIsValid_ShouldNotHaveValidationError()
-    {
-        // Arrange
-        var input = new CreateUserInput { Username = "testuser", Password = "ValidPassword123", Email = "user@example.com" };
-
-        // Act
-        var result = _validator.TestValidate(input);
-
-        // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.Email);
-    }
-
-    [Fact]
     public void Validate_WhenInputIsCompletelyValid_ShouldNotHaveValidationErrors()
     {
         // Arrange
-        var input = new CreateUserInput { Username = "testuser", Password = "ValidPassword123", Email = "user@example.com" };
+        var input = new CreateUserInput { Name = "Diego", Email = "diegosa@email.com", Password = "ValidPassword123" };
 
         // Act
         var result = _validator.TestValidate(input);

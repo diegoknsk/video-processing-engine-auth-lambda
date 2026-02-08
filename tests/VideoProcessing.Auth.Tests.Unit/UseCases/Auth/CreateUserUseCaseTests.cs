@@ -25,22 +25,22 @@ public class CreateUserUseCaseTests
     public async Task ExecuteAsync_WhenSignUpSucceeds_ShouldReturnCreateUserResponseModel()
     {
         // Arrange
-        var input = new CreateUserInput 
-        { 
-            Username = "testuser", 
-            Password = "password123", 
-            Email = "test@example.com" 
+        var input = new CreateUserInput
+        {
+            Name = "Diego",
+            Email = "test@example.com",
+            Password = "password123"
         };
         var output = new CreateUserOutput
         {
             UserId = "user-sub-123",
-            Username = "testuser",
+            Username = "test@example.com",
             UserConfirmed = true,
             ConfirmationRequired = false
         };
 
         _cognitoAuthServiceMock
-            .Setup(x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()))
             .ReturnsAsync(output);
 
         // Act
@@ -49,12 +49,12 @@ public class CreateUserUseCaseTests
         // Assert
         result.Should().NotBeNull();
         result.UserId.Should().Be("user-sub-123");
-        result.Username.Should().Be("testuser");
+        result.Username.Should().Be("test@example.com");
         result.UserConfirmed.Should().BeTrue();
         result.ConfirmationRequired.Should().BeFalse();
 
         _cognitoAuthServiceMock.Verify(
-            x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()),
+            x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -62,22 +62,22 @@ public class CreateUserUseCaseTests
     public async Task ExecuteAsync_WhenUserConfirmedIsFalse_ShouldSetConfirmationRequiredToTrue()
     {
         // Arrange
-        var input = new CreateUserInput 
-        { 
-            Username = "testuser", 
-            Password = "password123", 
-            Email = "test@example.com" 
+        var input = new CreateUserInput
+        {
+            Name = "Diego",
+            Email = "test@example.com",
+            Password = "password123"
         };
         var output = new CreateUserOutput
         {
             UserId = "user-sub-123",
-            Username = "testuser",
+            Username = "test@example.com",
             UserConfirmed = false,
             ConfirmationRequired = true
         };
 
         _cognitoAuthServiceMock
-            .Setup(x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()))
             .ReturnsAsync(output);
 
         // Act
@@ -92,15 +92,15 @@ public class CreateUserUseCaseTests
     public async Task ExecuteAsync_WhenServiceThrowsUsernameExistsException_ShouldPropagateException()
     {
         // Arrange
-        var input = new CreateUserInput 
-        { 
-            Username = "existinguser", 
-            Password = "password123", 
-            Email = "existing@example.com" 
+        var input = new CreateUserInput
+        {
+            Name = "Diego",
+            Email = "existing@example.com",
+            Password = "password123"
         };
 
         _cognitoAuthServiceMock
-            .Setup(x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Amazon.CognitoIdentityProvider.Model.UsernameExistsException("User already exists"));
 
         // Act & Assert
@@ -108,7 +108,7 @@ public class CreateUserUseCaseTests
             () => _useCase.ExecuteAsync(input));
 
         _cognitoAuthServiceMock.Verify(
-            x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()),
+            x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -116,15 +116,15 @@ public class CreateUserUseCaseTests
     public async Task ExecuteAsync_WhenServiceThrowsInvalidPasswordException_ShouldPropagateException()
     {
         // Arrange
-        var input = new CreateUserInput 
-        { 
-            Username = "testuser", 
-            Password = "weak", 
-            Email = "test@example.com" 
+        var input = new CreateUserInput
+        {
+            Name = "Diego",
+            Email = "test@example.com",
+            Password = "weak"
         };
 
         _cognitoAuthServiceMock
-            .Setup(x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Amazon.CognitoIdentityProvider.Model.InvalidPasswordException("Password does not meet requirements"));
 
         // Act & Assert
@@ -132,7 +132,7 @@ public class CreateUserUseCaseTests
             () => _useCase.ExecuteAsync(input));
 
         _cognitoAuthServiceMock.Verify(
-            x => x.SignUpAsync(input.Username, input.Password, input.Email, It.IsAny<CancellationToken>()),
+            x => x.SignUpAsync(input.Name, input.Email, input.Password, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -140,17 +140,17 @@ public class CreateUserUseCaseTests
     public async Task ExecuteAsync_WhenCancellationTokenIsCancelled_ShouldPropagateCancellation()
     {
         // Arrange
-        var input = new CreateUserInput 
-        { 
-            Username = "testuser", 
-            Password = "password123", 
-            Email = "test@example.com" 
+        var input = new CreateUserInput
+        {
+            Name = "Diego",
+            Email = "test@example.com",
+            Password = "password123"
         };
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
 
         _cognitoAuthServiceMock
-            .Setup(x => x.SignUpAsync(input.Username, input.Password, input.Email, cancellationTokenSource.Token))
+            .Setup(x => x.SignUpAsync(input.Name, input.Email, input.Password, cancellationTokenSource.Token))
             .ThrowsAsync(new OperationCanceledException());
 
         // Act & Assert

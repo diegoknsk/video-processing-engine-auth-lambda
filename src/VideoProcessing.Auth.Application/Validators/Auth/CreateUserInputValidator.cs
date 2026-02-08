@@ -10,13 +10,19 @@ public class CreateUserInputValidator : AbstractValidator<CreateUserInput>
 {
     public CreateUserInputValidator()
     {
-        RuleFor(x => x.Username)
+        RuleFor(x => x.Name)
             .NotEmpty()
-            .WithMessage("Username é obrigatório.")
-            .MaximumLength(128)
-            .WithMessage("Username deve ter no máximo 128 caracteres.")
-            .Matches("^[a-zA-Z0-9_-]+$")
-            .WithMessage("Username pode conter apenas letras, números, _ e -.");
+            .WithMessage("Name é obrigatório.")
+            .MaximumLength(256)
+            .WithMessage("Name deve ter no máximo 256 caracteres.");
+
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .WithMessage("Email é obrigatório.")
+            .MaximumLength(256)
+            .WithMessage("Email deve ter no máximo 256 caracteres.")
+            .EmailAddress()
+            .WithMessage("Email deve ser um formato válido.");
 
         RuleFor(x => x.Password)
             .NotEmpty()
@@ -25,13 +31,5 @@ public class CreateUserInputValidator : AbstractValidator<CreateUserInput>
             .WithMessage("Password deve ter pelo menos 8 caracteres.")
             .MaximumLength(256)
             .WithMessage("Password deve ter no máximo 256 caracteres.");
-
-        RuleFor(x => x.Email)
-            .NotEmpty()
-            .WithMessage("Email é obrigatório.")
-            .EmailAddress()
-            .WithMessage("Email em formato inválido.")
-            .MaximumLength(256)
-            .WithMessage("Email deve ter no máximo 256 caracteres.");
     }
 }

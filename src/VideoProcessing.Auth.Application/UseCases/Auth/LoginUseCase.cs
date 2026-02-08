@@ -25,16 +25,16 @@ public class LoginUseCase
     /// <summary>
     /// Executa o caso de uso de login.
     /// </summary>
-    /// <param name="input">Dados de entrada do login (username e password).</param>
+    /// <param name="input">Dados de entrada do login (email e password).</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Modelo de resposta com tokens de autenticação.</returns>
     public async Task<LoginResponseModel> ExecuteAsync(LoginInput input, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Executing login use case for user {Username}", input.Username);
+        _logger.LogInformation("Executing login use case for user {Email}", input.Email);
 
-        var output = await _cognitoAuthService.LoginAsync(input.Username, input.Password, cancellationToken);
+        var output = await _cognitoAuthService.LoginAsync(input.Email, input.Password, cancellationToken);
 
-        _logger.LogInformation("Login successful for user {Username}", input.Username);
+        _logger.LogInformation("Login successful for user {Email}", input.Email);
 
         return LoginPresenter.Present(output);
     }

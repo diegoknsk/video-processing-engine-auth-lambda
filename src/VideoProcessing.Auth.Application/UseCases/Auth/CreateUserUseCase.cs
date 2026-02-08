@@ -25,17 +25,17 @@ public class CreateUserUseCase
     /// <summary>
     /// Executa o caso de uso de criação de usuário.
     /// </summary>
-    /// <param name="input">Dados de entrada da criação de usuário (username, password e email).</param>
+    /// <param name="input">Dados de entrada da criação de usuário (name, email e password).</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Modelo de resposta com informações do usuário criado.</returns>
     public async Task<CreateUserResponseModel> ExecuteAsync(CreateUserInput input, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Executing create user use case for username {Username} and email {Email}", input.Username, input.Email);
+        _logger.LogInformation("Executing create user use case for email {Email}", input.Email);
 
-        var output = await _cognitoAuthService.SignUpAsync(input.Username, input.Password, input.Email, cancellationToken);
+        var output = await _cognitoAuthService.SignUpAsync(input.Name, input.Email, input.Password, cancellationToken);
 
-        _logger.LogInformation("User {Username} created successfully; UserId: {UserId}, UserConfirmed: {UserConfirmed}", 
-            input.Username, output.UserId, output.UserConfirmed);
+        _logger.LogInformation("User {Email} created successfully; UserId: {UserId}, UserConfirmed: {UserConfirmed}",
+            input.Email, output.UserId, output.UserConfirmed);
 
         return CreateUserPresenter.Present(output);
     }

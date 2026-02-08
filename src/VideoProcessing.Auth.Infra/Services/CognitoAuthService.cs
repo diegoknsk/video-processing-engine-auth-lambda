@@ -28,44 +28,34 @@ public class CognitoAuthService : ICognitoAuthService
         _logger = logger;
     }
 
-    public async Task<LoginOutput> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
+    public async Task<LoginOutput> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Attempting login for user {Username}", username);
+        _logger.LogInformation("Attempting login for user {Email}", email);
 
         try
         {
             var request = new InitiateAuthRequest
             {
-                ClientId = _options.AppClientId,
+                ClientId = _options.ClientId,
                 AuthFlow = AuthFlowType.USER_PASSWORD_AUTH,
                 AuthParameters = new Dictionary<string, string>
                 {
-                    { "USERNAME", username },
+                    { "USERNAME", email },
                     { "PASSWORD", password }
                 }
             };
-
-            // Calcular SECRET_HASH apenas se AppClientSecret estiver configurado
-            if (!string.IsNullOrWhiteSpace(_options.AppClientSecret))
-            {
-                var secretHash = SecretHashCalculator.ComputeSecretHash(
-                    username,
-                    _options.AppClientId,
-                    _options.AppClientSecret);
-                request.AuthParameters.Add("SECRET_HASH", secretHash);
-            }
 
             var response = await _cognitoClient.InitiateAuthAsync(request, cancellationToken);
 
             if (response.AuthenticationResult == null)
             {
-                _logger.LogWarning("Login failed for user {Username}: AuthenticationResult is null", username);
+                _logger.LogWarning("Login failed for user {Email}: AuthenticationResult is null", email);
                 throw new UnauthorizedAccessException("Credenciais inválidas");
             }
 
             var authResult = response.AuthenticationResult;
 
-            _logger.LogInformation("Login successful for user {Username}", username);
+            _logger.LogInformation("Login successful for user {Email}", email);
 
             return new LoginOutput
             {
@@ -78,74 +68,84 @@ public class CognitoAuthService : ICognitoAuthService
         }
         catch (NotAuthorizedException)
         {
-            _logger.LogWarning("Login failed for user {Username}: NotAuthorizedException", username);
+            _logger.LogWarning("Login failed for user {Email}: NotAuthorizedException", email);
             throw new UnauthorizedAccessException("Credenciais inválidas");
         }
         catch (UserNotFoundException)
         {
-            _logger.LogWarning("Login failed for user {Username}: UserNotFoundException", username);
+            _logger.LogWarning("Login failed for user {Email}: UserNotFoundException", email);
             throw new UnauthorizedAccessException("Credenciais inválidas");
         }
     }
 
-    public async Task<CreateUserOutput> SignUpAsync(string username, string password, string email, CancellationToken cancellationToken = default)
+    public async Task<CreateUserOutput> SignUpAsync(string name, string email, string password, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Attempting to create user {Username} with email {Email}", username, email);
+        _logger.LogInformation("Attempting to create user {Email}", email);
 
         try
         {
-            var request = new SignUpRequest
+            // AdminCreateUser: cria usuário já confirmado sem envio de email
+            var createUserRequest = new AdminCreateUserRequest
             {
-                ClientId = _options.AppClientId,
-                Username = username,
-                Password = password,
+                UserPoolId = _options.UserPoolId,
+                Username = email,
+                TemporaryPassword = password,
+                MessageAction = MessageActionType.SUPPRESS,
                 UserAttributes = new List<AttributeType>
                 {
-                    new AttributeType { Name = "email", Value = email }
+                    new AttributeType { Name = "email", Value = email },
+                    new AttributeType { Name = "name", Value = name },
+                    new AttributeType { Name = "email_verified", Value = "true" }
                 }
             };
 
-            // Calcular SECRET_HASH apenas se AppClientSecret estiver configurado
-            if (!string.IsNullOrWhiteSpace(_options.AppClientSecret))
+            var createUserResponse = await _cognitoClient.AdminCreateUserAsync(createUserRequest, cancellationToken);
+
+            // AdminSetUserPassword: define senha permanente para permitir login imediato
+            var setPasswordRequest = new AdminSetUserPasswordRequest
             {
-                var secretHash = SecretHashCalculator.ComputeSecretHash(
-                    username,
-                    _options.AppClientId,
-                    _options.AppClientSecret);
-                request.SecretHash = secretHash;
-            }
+                UserPoolId = _options.UserPoolId,
+                Username = email,
+                Password = password,
+                Permanent = true
+            };
 
-            var response = await _cognitoClient.SignUpAsync(request, cancellationToken);
+            await _cognitoClient.AdminSetUserPasswordAsync(setPasswordRequest, cancellationToken);
 
-            _logger.LogInformation("User {Username} created successfully; UserSub: {UserSub}, UserConfirmed: {UserConfirmed}", 
-                username, response.UserSub, response.UserConfirmed);
+            // O UserSub está no atributo "sub" dentro de User.Attributes
+            var userSub = createUserResponse.User?.Attributes?.FirstOrDefault(a => a.Name == "sub")?.Value 
+                ?? createUserResponse.User?.Username 
+                ?? string.Empty;
+
+            _logger.LogInformation("User {Email} created successfully with AdminCreateUser; UserSub: {UserSub}",
+                email, userSub);
 
             return new CreateUserOutput
             {
-                UserId = response.UserSub,
-                Username = username,
-                UserConfirmed = response.UserConfirmed,
-                ConfirmationRequired = !response.UserConfirmed
+                UserId = userSub,
+                Username = email,
+                UserConfirmed = true,
+                ConfirmationRequired = false
             };
         }
         catch (UsernameExistsException ex)
         {
-            _logger.LogWarning("User creation failed for {Username}: UsernameExistsException - {ErrorCode}", username, ex.ErrorCode);
+            _logger.LogWarning("User creation failed for {Email}: UsernameExistsException - {ErrorCode}", email, ex.ErrorCode);
             throw;
         }
         catch (InvalidPasswordException ex)
         {
-            _logger.LogWarning("User creation failed for {Username}: InvalidPasswordException - {ErrorCode}", username, ex.ErrorCode);
+            _logger.LogWarning("User creation failed for {Email}: InvalidPasswordException - {ErrorCode}", email, ex.ErrorCode);
             throw;
         }
         catch (InvalidParameterException ex)
         {
-            _logger.LogWarning("User creation failed for {Username}: InvalidParameterException - {ErrorCode}", username, ex.ErrorCode);
+            _logger.LogWarning("User creation failed for {Email}: InvalidParameterException - {ErrorCode}", email, ex.ErrorCode);
             throw new ArgumentException("Parâmetro inválido.", ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "User creation failed for {Username}: Unexpected error", username);
+            _logger.LogError(ex, "User creation failed for {Email}: Unexpected error", email);
             throw;
         }
     }

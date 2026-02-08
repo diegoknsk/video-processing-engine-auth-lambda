@@ -10,11 +10,13 @@ public class LoginInputValidator : AbstractValidator<LoginInput>
 {
     public LoginInputValidator()
     {
-        RuleFor(x => x.Username)
+        RuleFor(x => x.Email)
             .NotEmpty()
-            .WithMessage("Username é obrigatório.")
-            .MaximumLength(128)
-            .WithMessage("Username deve ter no máximo 128 caracteres.");
+            .WithMessage("Email é obrigatório.")
+            .MaximumLength(256)
+            .WithMessage("Email deve ter no máximo 256 caracteres.")
+            .EmailAddress()
+            .WithMessage("Email deve ser um formato válido.");
 
         RuleFor(x => x.Password)
             .NotEmpty()

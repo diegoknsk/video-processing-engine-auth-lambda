@@ -6,9 +6,9 @@ namespace VideoProcessing.Auth.Application.InputModels.Auth;
 public record LoginInput
 {
     /// <summary>
-    /// Nome de usuário para autenticação.
+    /// Email do usuário (identificador de login quando username_attributes = ["email"] no Cognito).
     /// </summary>
-    public string Username { get; init; } = string.Empty;
+    public string Email { get; init; } = string.Empty;
 
     /// <summary>
     /// Senha do usuário.

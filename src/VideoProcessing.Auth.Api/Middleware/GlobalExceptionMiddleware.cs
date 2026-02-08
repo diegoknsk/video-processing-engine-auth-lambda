@@ -60,6 +60,7 @@ public class GlobalExceptionMiddleware
             // Exceções do Cognito
             NotAuthorizedException => (StatusCodes.Status401Unauthorized, "InvalidCredentials", "Credenciais inválidas."),
             UserNotFoundException => (StatusCodes.Status401Unauthorized, "InvalidCredentials", "Credenciais inválidas."),
+            UserNotConfirmedException => (StatusCodes.Status403Forbidden, "UserNotConfirmed", "Conta não confirmada. Verifique seu e-mail e confirme o cadastro."),
             UsernameExistsException => (StatusCodes.Status409Conflict, "UserAlreadyExists", "Usuário já existe."),
             InvalidPasswordException => (StatusCodes.Status422UnprocessableEntity, "InvalidPassword", "Senha não atende aos requisitos de política."),
             TooManyRequestsException => (StatusCodes.Status429TooManyRequests, "TooManyRequests", "Limite de requisições excedido."),

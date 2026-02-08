@@ -26,7 +26,7 @@ public class LoginUseCaseTests
     public async Task ExecuteAsync_WhenLoginSucceeds_ShouldReturnLoginResponseModel()
     {
         // Arrange
-        var input = new LoginInput { Username = "testuser", Password = "password123" };
+        var input = new LoginInput { Email = "test@example.com", Password = "password123" };
         var output = new LoginOutput
         {
             AccessToken = "access-token",
@@ -37,7 +37,7 @@ public class LoginUseCaseTests
         };
 
         _cognitoAuthServiceMock
-            .Setup(x => x.LoginAsync(input.Username, input.Password, It.IsAny<CancellationToken>()))
+            .Setup(x => x.LoginAsync(input.Email, input.Password, It.IsAny<CancellationToken>()))
             .ReturnsAsync(output);
 
         // Act
@@ -52,7 +52,7 @@ public class LoginUseCaseTests
         result.TokenType.Should().Be("Bearer");
 
         _cognitoAuthServiceMock.Verify(
-            x => x.LoginAsync(input.Username, input.Password, It.IsAny<CancellationToken>()),
+            x => x.LoginAsync(input.Email, input.Password, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -60,10 +60,10 @@ public class LoginUseCaseTests
     public async Task ExecuteAsync_WhenServiceThrowsUnauthorizedAccessException_ShouldPropagateException()
     {
         // Arrange
-        var input = new LoginInput { Username = "testuser", Password = "wrongpassword" };
+        var input = new LoginInput { Email = "test@example.com", Password = "wrongpassword" };
 
         _cognitoAuthServiceMock
-            .Setup(x => x.LoginAsync(input.Username, input.Password, It.IsAny<CancellationToken>()))
+            .Setup(x => x.LoginAsync(input.Email, input.Password, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UnauthorizedAccessException("Credenciais inválidas"));
 
         // Act & Assert
@@ -71,7 +71,7 @@ public class LoginUseCaseTests
             () => _useCase.ExecuteAsync(input));
 
         _cognitoAuthServiceMock.Verify(
-            x => x.LoginAsync(input.Username, input.Password, It.IsAny<CancellationToken>()),
+            x => x.LoginAsync(input.Email, input.Password, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -79,12 +79,12 @@ public class LoginUseCaseTests
     public async Task ExecuteAsync_WhenCancellationTokenIsCancelled_ShouldPropagateCancellation()
     {
         // Arrange
-        var input = new LoginInput { Username = "testuser", Password = "password123" };
+        var input = new LoginInput { Email = "test@example.com", Password = "password123" };
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
 
         _cognitoAuthServiceMock
-            .Setup(x => x.LoginAsync(input.Username, input.Password, cancellationTokenSource.Token))
+            .Setup(x => x.LoginAsync(input.Email, input.Password, cancellationTokenSource.Token))
             .ThrowsAsync(new OperationCanceledException());
 
         // Act & Assert
