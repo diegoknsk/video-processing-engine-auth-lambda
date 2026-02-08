@@ -16,7 +16,7 @@ Substituir a chamada `SignUp` no `CognitoAuthService.SignUpAsync` por fluxo **Ad
 - Integração: com User Pool real e IAM configurado, executar create + login e validar que não há passo de confirmação de email.
 
 ## Critérios de aceite da subtask
-- [ ] `CognitoAuthService.SignUpAsync` utiliza apenas `AdminCreateUserAsync` e `AdminSetUserPasswordAsync` (não chama mais `SignUpAsync`).
-- [ ] AdminCreateUser é chamado com `MessageAction = SUPPRESS`, `UserAttributes` com email, name e email_verified = "true", e `TemporaryPassword` com a senha informada.
-- [ ] AdminSetUserPassword é chamado com a mesma senha e `Permanent = true`.
-- [ ] Retorno mantém contrato `CreateUserOutput` com `UserConfirmed = true` e `ConfirmationRequired = false`.
+- [x] `CognitoAuthService.SignUpAsync` utiliza apenas `AdminCreateUserAsync` e `AdminSetUserPasswordAsync` (não chama mais `SignUpAsync`).
+- [x] AdminCreateUser é chamado com `MessageAction = SUPPRESS`, `UserAttributes` com email, name e email_verified = "true", e `TemporaryPassword` com a senha informada.
+- [x] AdminSetUserPassword é chamado com a mesma senha e `Permanent = true`.
+- [x] Retorno mantém contrato `CreateUserOutput` com `UserConfirmed = true` e `ConfirmationRequired = false`.

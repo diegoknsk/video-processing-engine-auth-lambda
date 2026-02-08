@@ -16,6 +16,6 @@ Incluir no README do projeto (ou em documentação referenciada) as permissões 
 - Verificar que a seção está coerente com o uso de UserPoolId em CognitoOptions.
 
 ## Critérios de aceite da subtask
-- [ ] README (ou doc referenciada) descreve que são necessárias as permissões `cognito-idp:AdminCreateUser` e `cognito-idp:AdminSetUserPassword` no User Pool.
-- [ ] Fica claro que isso se aplica ao fluxo de criação de usuário sem confirmação de email.
-- [ ] Opcional: exemplo de política IAM incluído ou link para documentação AWS.
+- [x] README (ou doc referenciada) descreve que são necessárias as permissões `cognito-idp:AdminCreateUser` e `cognito-idp:AdminSetUserPassword` no User Pool.
+- [x] Fica claro que isso se aplica ao fluxo de criação de usuário sem confirmação de email.
+- [x] Opcional: exemplo de política IAM incluído ou link para documentação AWS.
