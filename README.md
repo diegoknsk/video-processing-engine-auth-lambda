@@ -2,6 +2,8 @@
 
 API de autenticação para Video Processing Engine usando Amazon Cognito.
 
+[![Deploy to AWS Lambda](https://github.com/diegoknsk/video-processing-engine-auth-lambda/actions/workflows/deploy-lambda.yml/badge.svg)](https://github.com/diegoknsk/video-processing-engine-auth-lambda/actions/workflows/deploy-lambda.yml)
+
 ## 📚 Documentação
 
 - **Documentação Interativa (Scalar UI)**: Acesse `/docs` quando a aplicação estiver em execução
@@ -9,6 +11,7 @@ API de autenticação para Video Processing Engine usando Amazon Cognito.
 - **Geração de Client Kiota**: Veja [docs/kiota-client-generation.md](./docs/kiota-client-generation.md)
 - **Configuração API Gateway**: Veja [docs/api-gateway-configuration.md](./docs/api-gateway-configuration.md)
 - **Contexto Arquitetural**: Veja [docs/contexto-arquitetural.md](./docs/contexto-arquitetural.md)
+- **Deploy e CI/CD**: Veja [docs/deploy-github-actions.md](./docs/deploy-github-actions.md)
 
 ## 🚀 Endpoints
 
@@ -70,6 +73,7 @@ tests/
 
 docs/                                     # Documentação
 storys/                                   # Stories técnicas
+.github/workflows/                        # GitHub Actions (CI/CD)
 ```
 
 ## 🔐 Configuração
@@ -119,3 +123,55 @@ Consulte a [documentação completa](./docs/) para mais detalhes sobre:
 - Geração de clientes tipados com Kiota
 - Configuração para API Gateway
 - Arquitetura e decisões técnicas
+- Deploy automatizado via GitHub Actions
+
+## 🚀 Deploy e CI/CD
+
+A aplicação possui deploy automatizado via GitHub Actions para AWS Lambda.
+
+### Deploy Automático
+
+O workflow é executado automaticamente em:
+- **Push para `main`**: Deploy direto em produção
+- **Pull Request para `main`**: Build e testes de validação### Deploy ManualVocê pode executar o deploy manualmente em qualquer branch via GitHub Actions:
+
+1. Acesse: `Actions > Deploy Lambda Auth API > Run workflow`
+2. Selecione a branch desejada
+3. Clique em `Run workflow`
+
+### Configuração Necessária
+
+#### GitHub Secrets (obrigatórios)
+
+Configure em `Settings > Secrets and variables > Actions > Secrets`:
+
+| Secret | Descrição |
+|--------|-----------|
+| `AWS_ACCESS_KEY_ID` | Access Key ID do IAM User para deploy |
+| `AWS_SECRET_ACCESS_KEY` | Secret Access Key do IAM User para deploy |
+
+#### GitHub Variables (opcionais)
+
+Configure em `Settings > Secrets and variables > Actions > Variables`:
+
+| Variable | Descrição | Valor Padrão |
+|----------|-----------|--------------|
+| `AWS_REGION` | Região AWS do Lambda | `us-east-1` |
+| `LAMBDA_FUNCTION_NAME` | Nome da função Lambda | `video-processing-engine-dev-auth` |
+
+#### Variáveis de Ambiente do Lambda
+
+Configure as seguintes variáveis de ambiente na função Lambda (via AWS Console ou IaC):
+
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `Cognito__Region` | Região do Cognito User Pool | `us-east-1` |
+| `Cognito__UserPoolId` | ID do User Pool | `us-east-1_XXXXXXXXX` |
+| `Cognito__ClientId` | Client ID da aplicação | `xxxxxxxxxxxxxxxxxx` |
+| `ASPNETCORE_ENVIRONMENT` | Ambiente de execução | `Production` |
+
+**📚 Documentação completa:** Veja [docs/deploy-github-actions.md](./docs/deploy-github-actions.md) para:
+- Configuração detalhada de IAM permissions
+- Troubleshooting de problemas comuns
+- Estrutura do workflow
+- Processo de deploy passo a passo

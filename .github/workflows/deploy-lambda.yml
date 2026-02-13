@@ -1,0 +1,163 @@
+name: Deploy Lambda Auth API
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      lambda_function_name:
+        description: 'Nome do Lambda (opcional, usa variável se vazio)'
+        required: false
+        type: string
+      aws_region:
+        description: 'Região AWS (opcional, usa variável se vazio)'
+        required: false
+        type: string
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  # Região: input manual > variable > padrão
+  AWS_REGION: ${{ inputs.aws_region || vars.AWS_REGION || 'us-east-1' }}
+  LAMBDA_FUNCTION_NAME: ${{ inputs.lambda_function_name || vars.LAMBDA_FUNCTION_NAME || 'video-processing-engine-dev-auth' }}
+  # Cognito: usados para injetar env vars no Lambda (opcional; valores de referência em appsettings.Development.json)
+  COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+  COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to AWS Lambda
+    runs-on: ubuntu-latest
+    
+    # Previne execuções concorrentes do mesmo workflow
+    concurrency:
+      group: deploy-lambda-${{ github.ref }}
+      cancel-in-progress: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Publish application
+        run: |
+          dotnet publish src/VideoProcessing.Auth.Api/VideoProcessing.Auth.Api.csproj \
+            --configuration Release \
+            --runtime linux-x64 \
+            --self-contained false \
+            --output ./publish
+
+      - name: Create deployment package
+        run: |
+          cd publish
+          zip -r ../deployment-package.zip .
+          cd ..
+          echo "Package size: $(du -h deployment-package.zip | cut -f1)"
+
+      - name: PR Validation Complete
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "✅ Pull Request validation completed successfully!"
+          echo "Build, tests, and package creation passed."
+          echo "Deployment will occur after merge to main."
+
+      - name: Configure AWS credentials
+        if: github.event_name != 'pull_request'
+        uses: aws-actions/configure-aws-credentials@v4
+        env:
+          # Credenciais temporárias (STS): incluir SESSION_TOKEN quando usar role/token
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Lambda
+        if: github.event_name != 'pull_request'
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://deployment-package.zip \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for Lambda update to complete
+        if: github.event_name != 'pull_request'
+        run: |
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Verify deployment
+        if: github.event_name != 'pull_request'
+        run: |
+          aws lambda get-function \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Configuration.[FunctionName,LastModified,Runtime,State]' \
+            --output table
+
+      - name: Update Lambda environment variables (Cognito)
+        if: github.event_name != 'pull_request' && env.COGNITO_USER_POOL_ID != '' && env.COGNITO_CLIENT_ID != ''
+        env:
+          COGNITO_REGION: ${{ env.AWS_REGION }}
+          COGNITO_USER_POOL_ID: ${{ env.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ env.COGNITO_CLIENT_ID }}
+        run: |
+          # Mescla variáveis existentes do Lambda com Cognito (update-function-configuration substitui todas se não mesclarmos)
+          EXISTING=$(aws lambda get-function-configuration \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Environment.Variables' \
+            --output json)
+          MERGED=$(echo "$EXISTING" | jq -c --arg r "$COGNITO_REGION" --arg pid "$COGNITO_USER_POOL_ID" --arg cid "$COGNITO_CLIENT_ID" \
+            '(if . == null then {} else . end) + {Cognito__Region: $r, Cognito__UserPoolId: $pid, Cognito__ClientId: $cid}')
+          aws lambda update-function-configuration \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --environment "{\"Variables\":$MERGED}"
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-package
+          path: deployment-package.zip
+          retention-days: 7
+
+  # Job separado para futura verificação de cobertura de testes
+  # Preparado para story futura: bloquear PR com cobertura < 70%
+  # test-coverage:
+  #   name: Verify Test Coverage
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: ${{ env.DOTNET_VERSION }}
+  #     
+  #     - name: Run tests with coverage
+  #       run: dotnet test /p:CollectCoverage=true /p:CoverageReporter=cobertura
+  #     
+  #     - name: Verify coverage threshold
+  #       run: |
+  #         # Script para verificar se cobertura >= 70%
+  #         # Falhar o job se abaixo do threshold

@@ -15,6 +15,6 @@ Garantir que as exceções lançadas pelas APIs Admin (AdminCreateUser, AdminSet
 - Teste manual: enviar email duplicado no create e verificar resposta 409.
 
 ## Critérios de aceite da subtask
-- [ ] Exceções de AdminCreateUser/AdminSetUserPassword tratadas de forma que 409 (usuário já existe), 422 (senha inválida) e 400 (parâmetro inválido) continuem sendo retornados pela API.
-- [ ] Resposta 201 de create retorna `userConfirmed: true` e `confirmationRequired: false`.
-- [ ] Nenhuma alteração desnecessária em contratos da API (request/response) além do que for exigido pela mudança de fluxo.
+- [x] Exceções de AdminCreateUser/AdminSetUserPassword tratadas de forma que 409 (usuário já existe), 422 (senha inválida) e 400 (parâmetro inválido) continuem sendo retornados pela API.
+- [x] Resposta 201 de create retorna `userConfirmed: true` e `confirmationRequired: false`.
+- [x] Nenhuma alteração desnecessária em contratos da API (request/response) além do que for exigido pela mudança de fluxo.

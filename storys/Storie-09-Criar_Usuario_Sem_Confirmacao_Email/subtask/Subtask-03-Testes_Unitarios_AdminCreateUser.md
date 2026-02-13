@@ -16,8 +16,8 @@ Atualizar os testes unitários do `CognitoAuthService` que cobrem a criação de
 - Revisar que nenhum teste quebrado depende de SignUp.
 
 ## Critérios de aceite da subtask
-- [ ] Testes de criação de usuário passam com mocks de AdminCreateUserAsync e AdminSetUserPasswordAsync.
-- [ ] Pelo menos um teste verifica que AdminCreateUser é chamado com MessageAction SUPPRESS e email_verified nos atributos.
-- [ ] Pelo menos um teste verifica que AdminSetUserPassword é chamado com Permanent = true.
-- [ ] Testes de exceção (usuário já existe, senha inválida) atualizados e passando.
-- [ ] `dotnet test` executa sem falhas no projeto VideoProcessing.Auth.Tests.Unit.
+- [x] Testes de criação de usuário passam com mocks de AdminCreateUserAsync e AdminSetUserPasswordAsync.
+- [x] Pelo menos um teste verifica que AdminCreateUser é chamado com MessageAction SUPPRESS e email_verified nos atributos.
+- [x] Pelo menos um teste verifica que AdminSetUserPassword é chamado com Permanent = true.
+- [x] Testes de exceção (usuário já existe, senha inválida) atualizados e passando.
+- [x] `dotnet test` executa sem falhas no projeto VideoProcessing.Auth.Tests.Unit.
