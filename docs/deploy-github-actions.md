@@ -64,7 +64,7 @@ O workflow precisa de credenciais AWS com as seguintes permissões:
 }
 ```
 
-**Nota:** Se o workflow também atualizar variáveis de ambiente do Lambda (feature futura), adicionar `lambda:UpdateFunctionConfiguration`.
+**Nota:** O workflow atualiza variáveis de ambiente do Lambda (Cognito) quando as GitHub Variables `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estão setadas; nesse caso o IAM precisa de `lambda:GetFunctionConfiguration` e `lambda:UpdateFunctionConfiguration`.
 
 #### Criar IAM User para CI/CD
 
@@ -117,8 +117,11 @@ Configure os seguintes **Secrets** no repositório GitHub: `Settings > Secrets a
 
 | Secret Name | Descrição | Como Obter |
 |-------------|-----------|------------|
-| `AWS_ACCESS_KEY_ID` | Access Key ID do IAM User para deploy | Criado via `aws iam create-access-key` (ver seção anterior) |
-| `AWS_SECRET_ACCESS_KEY` | Secret Access Key do IAM User para deploy | Criado via `aws iam create-access-key` (ver seção anterior) |
+| `AWS_ACCESS_KEY_ID` | Access Key ID do IAM User (ou credenciais temporárias STS) para deploy | Criado via `aws iam create-access-key` ou obtido de sessão STS |
+| `AWS_SECRET_ACCESS_KEY` | Secret Access Key correspondente | Idem |
+| `AWS_SESSION_TOKEN` | Token de sessão (obrigatório quando usar credenciais temporárias/STS) | Retornado por `AssumeRole`, `GetSessionToken`, etc. |
+
+**Região:** use a **Variable** `AWS_REGION` (ou o input manual no workflow). Ordem: input manual → variable `AWS_REGION` → `us-east-1`.
 
 **⚠️ Segurança:**
 - **Nunca** commite essas credenciais no código
@@ -134,8 +137,10 @@ Configure as seguintes **Variables** no repositório GitHub: `Settings > Secrets
 |---------------|-----------|--------------|----------------|
 | `AWS_REGION` | Região AWS do Lambda | `us-east-1` | Se o Lambda estiver em outra região |
 | `LAMBDA_FUNCTION_NAME` | Nome da função Lambda | `video-processing-engine-dev-auth` | Se a função tiver nome diferente |
+| `COGNITO_USER_POOL_ID` | ID do Cognito User Pool (injetado no Lambda como `Cognito__UserPoolId`) | — | Para o workflow atualizar env vars do Lambda |
+| `COGNITO_CLIENT_ID` | App Client ID do Cognito (injetado no Lambda como `Cognito__ClientId`) | — | Idem |
 
-**Nota:** Se não configuradas, o workflow usa os valores padrão acima.
+**Nota:** Se `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estiverem configurados, o workflow mescla essas variáveis nas env vars do Lambda após o deploy. Valores de referência podem ser os do `appsettings.Development.json` (seção Cognito). Processo completo de subida e checklist: [processo-subida-deploy.md](./processo-subida-deploy.md).
 
 ## 🚀 Como Funciona o Workflow
 
@@ -179,6 +184,7 @@ Você pode executar o workflow manualmente em **qualquer branch**:
 | Deploy to Lambda | `aws lambda update-function-code` | Permissões IAM, função não existe |
 | Wait for update | Aguarda Lambda ficar em estado `Active` | Timeout (função não atualiza) |
 | Verify deployment | Mostra informações da função | Falha de leitura (não crítico) |
+| Update Lambda environment variables (Cognito) | Mescla Cognito (Region, UserPoolId, ClientId) nas env vars do Lambda | Só roda se Variables COGNITO_* estiverem setadas |
 | Upload artifact | Salva ZIP como artifact do workflow | Falha de upload (não crítico) |
 
 #### Job: `test-coverage` (Comentado - Futura)

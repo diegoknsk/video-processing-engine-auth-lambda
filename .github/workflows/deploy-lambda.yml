@@ -20,9 +20,12 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  # Usa input manual se fornecido, senão usa variável do GitHub, senão usa valor padrão
+  # Região: input manual > variable > padrão
   AWS_REGION: ${{ inputs.aws_region || vars.AWS_REGION || 'us-east-1' }}
   LAMBDA_FUNCTION_NAME: ${{ inputs.lambda_function_name || vars.LAMBDA_FUNCTION_NAME || 'video-processing-engine-dev-auth' }}
+  # Cognito: usados para injetar env vars no Lambda (opcional; valores de referência em appsettings.Development.json)
+  COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+  COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
 jobs:
   build-and-deploy:
@@ -77,6 +80,9 @@ jobs:
       - name: Configure AWS credentials
         if: github.event_name != 'pull_request'
         uses: aws-actions/configure-aws-credentials@v4
+        env:
+          # Credenciais temporárias (STS): incluir SESSION_TOKEN quando usar role/token
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -105,6 +111,26 @@ jobs:
             --region ${{ env.AWS_REGION }} \
             --query 'Configuration.[FunctionName,LastModified,Runtime,State]' \
             --output table
+
+      - name: Update Lambda environment variables (Cognito)
+        if: github.event_name != 'pull_request' && env.COGNITO_USER_POOL_ID != '' && env.COGNITO_CLIENT_ID != ''
+        env:
+          COGNITO_REGION: ${{ env.AWS_REGION }}
+          COGNITO_USER_POOL_ID: ${{ env.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ env.COGNITO_CLIENT_ID }}
+        run: |
+          # Mescla variáveis existentes do Lambda com Cognito (update-function-configuration substitui todas se não mesclarmos)
+          EXISTING=$(aws lambda get-function-configuration \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Environment.Variables' \
+            --output json)
+          MERGED=$(echo "$EXISTING" | jq -c --arg r "$COGNITO_REGION" --arg pid "$COGNITO_USER_POOL_ID" --arg cid "$COGNITO_CLIENT_ID" \
+            '(if . == null then {} else . end) + {Cognito__Region: $r, Cognito__UserPoolId: $pid, Cognito__ClientId: $cid}')
+          aws lambda update-function-configuration \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --environment "{\"Variables\":$MERGED}"
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
