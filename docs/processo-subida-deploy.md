@@ -72,7 +72,7 @@ Quando a autenticação for com **credenciais temporárias** (ex.: AssumeRole, S
    - **AWS_SECRET_ACCESS_KEY**
    - **AWS_SESSION_TOKEN** (obrigatório nesse cenário)
 
-2. O workflow já está preparado: o step **Configure AWS credentials** define `AWS_SESSION_TOKEN` a partir de `secrets.AWS_SESSION_TOKEN`.
+2. O workflow já está preparado: o step **Configure AWS credentials** recebe o token pelo **input** `aws-session-token` (valor de `secrets.AWS_SESSION_TOKEN`). O token deve ser passado pelo input da action, não só por variável de ambiente, para que as credenciais temporárias sejam usadas corretamente nos steps seguintes.
 
 3. Região: **Variable** `AWS_REGION` ou input manual no Run workflow; padrão `us-east-1`.
 

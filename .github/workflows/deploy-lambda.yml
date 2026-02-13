@@ -80,12 +80,10 @@ jobs:
       - name: Configure AWS credentials
         if: github.event_name != 'pull_request'
         uses: aws-actions/configure-aws-credentials@v4
-        env:
-          # Credenciais temporárias (STS): incluir SESSION_TOKEN quando usar role/token
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to Lambda
