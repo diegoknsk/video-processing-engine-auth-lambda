@@ -133,11 +133,7 @@ A aplicação possui deploy automatizado via GitHub Actions para AWS Lambda.
 
 O workflow é executado automaticamente em:
 - **Push para `main`**: Deploy direto em produção
-- **Pull Request para `main`**: Build e testes de validação
-
-### Deploy Manual
-
-Você pode executar o deploy manualmente em qualquer branch via GitHub Actions:
+- **Pull Request para `main`**: Build e testes de validação### Deploy ManualVocê pode executar o deploy manualmente em qualquer branch via GitHub Actions:
 
 1. Acesse: `Actions > Deploy Lambda Auth API > Run workflow`
 2. Selecione a branch desejada
