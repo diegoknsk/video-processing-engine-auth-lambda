@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Moq;
 using VideoProcessing.Auth.Api.Middleware;
 
@@ -16,7 +17,7 @@ public class GatewayPathBaseMiddlewareTests
         UnsetEnv();
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -37,7 +38,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -58,7 +59,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("/auth");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -79,7 +80,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("/auth");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -100,7 +101,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("/auth");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -121,7 +122,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("/auth");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -142,7 +143,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("/auth");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 
@@ -163,7 +164,7 @@ public class GatewayPathBaseMiddlewareTests
         SetEnv("auth");
         try
         {
-            var middleware = new GatewayPathBaseMiddleware(nextMock.Object);
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
 
             await middleware.InvokeAsync(context);
 

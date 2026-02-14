@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace VideoProcessing.Auth.Api.Middleware;
 
@@ -8,7 +9,7 @@ namespace VideoProcessing.Auth.Api.Middleware;
 /// Quando a variável não está definida ou está vazia, o path não é alterado.
 /// A comparação do prefixo é case-insensitive.
 /// </summary>
-public class GatewayPathBaseMiddleware(RequestDelegate next)
+public class GatewayPathBaseMiddleware(RequestDelegate next, ILogger<GatewayPathBaseMiddleware> logger)
 {
     private const string GatewayPathPrefixKey = "GATEWAY_PATH_PREFIX";
 
@@ -51,6 +52,9 @@ public class GatewayPathBaseMiddleware(RequestDelegate next)
 
         context.Request.PathBase = new PathString(pathSegment);
         context.Request.Path = new PathString(rest);
+        logger.LogInformation(
+            "GATEWAY_PATH_PREFIX applied: original path {OriginalPath} -> PathBase={PathBase}, Path={Path}",
+            path, pathSegment, rest);
 
         return next(context);
     }
