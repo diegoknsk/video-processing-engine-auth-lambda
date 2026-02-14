@@ -21,10 +21,6 @@ on:
         description: 'Prefixo de path do API Gateway (ex.: /auth). Opcional; usa variável GATEWAY_PATH_PREFIX se vazio.'
         required: false
         type: string
-      lab_role_arn:
-        description: 'ARN da role AWS para assumir no deploy (ex.: LabRole). Se vazio, usa variável ou default LabRole.'
-        required: false
-        type: string
 
 env:
   DOTNET_VERSION: '10.0.x'
@@ -36,8 +32,6 @@ env:
   COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
   # Prefixo de path quando a Lambda está atrás do API Gateway. Vazio na Action = usa /auth (padrão). Ver docs/gateway-path-prefix.md
   GATEWAY_PATH_PREFIX: ${{ inputs.gateway_path_prefix || vars.GATEWAY_PATH_PREFIX || '/auth' }}
-  # Role a assumir no deploy (evita AccessDenied em lambda:UpdateFunctionCode quando a credencial base tem explicit deny). Se vazio, usa LabRole.
-  LAB_ROLE_ARN: ${{ inputs.lab_role_arn || vars.LAB_ROLE_ARN || 'arn:aws:iam::804879632477:role/LabRole' }}
 
 jobs:
   build-and-deploy:
@@ -96,8 +90,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          role-to-assume: ${{ env.LAB_ROLE_ARN }}
-          role-skip-session-tagging: true
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to Lambda
@@ -115,21 +107,13 @@ jobs:
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --region ${{ env.AWS_REGION }}
 
-      - name: Update Lambda handler
-        if: github.event_name != 'pull_request'
-        run: |
-          aws lambda update-function-configuration \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --region ${{ env.AWS_REGION }} \
-            --handler "VideoProcessing.Auth.Api"
-
       - name: Verify deployment
         if: github.event_name != 'pull_request'
         run: |
           aws lambda get-function \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --region ${{ env.AWS_REGION }} \
-            --query 'Configuration.[FunctionName,LastModified,Runtime,State,Handler]' \
+            --query 'Configuration.[FunctionName,LastModified,Runtime,State]' \
             --output table
 
       - name: Update Lambda environment variables (Cognito + GATEWAY_PATH_PREFIX)

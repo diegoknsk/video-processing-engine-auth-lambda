@@ -28,9 +28,8 @@ O workflow `.github/workflows/deploy-lambda.yml` automatiza o processo de build,
 7. Criação do ZIP de deployment
 8. Deploy no Lambda via AWS CLI
 9. Wait for Lambda update to complete
-10. Update Lambda handler (VideoProcessing.Auth.Api)
-11. Verificação do deploy
-12. Upload do artifact (ZIP)
+10. Verificação do deploy
+11. Upload do artifact (ZIP)
 ```
 
 ## ☁️ Pré-requisitos AWS
@@ -42,7 +41,7 @@ A função Lambda deve estar previamente criada na AWS (via Terraform/CloudForma
 - **Nome padrão:** `video-processing-engine-dev-auth`
 - **Runtime:** `dotnet8` ou `dotnet6` com bootstrap customizado
 - **Arquitetura:** x86_64
-- **Handler:** Configurado para ASP.NET Core Lambda (`VideoProcessing.Auth.Api`)
+- **Handler:** Definido via IaC (ex.: `VideoProcessing.Auth.Api`)
 
 ### 2. IAM User/Role para Deploy
 
@@ -68,7 +67,7 @@ O workflow precisa de credenciais AWS com as seguintes permissões:
 }
 ```
 
-**Nota:** O workflow configura o Handler (`UpdateFunctionConfiguration`) em todo deploy e, quando as GitHub Variables `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estão setadas, atualiza as variáveis de ambiente do Lambda (Cognito). Por isso a policy inclui `lambda:UpdateFunctionConfiguration` e `lambda:GetFunctionConfiguration`.
+**Nota:** O workflow atualiza as variáveis de ambiente do Lambda quando as GitHub Variables `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estão setadas. Por isso a policy inclui `lambda:UpdateFunctionConfiguration` e `lambda:GetFunctionConfiguration`.
 
 #### Criar IAM User para CI/CD
 
@@ -188,8 +187,7 @@ Você pode executar o workflow manualmente em **qualquer branch**:
 | Configure AWS credentials | Configura AWS CLI com secrets | Credenciais inválidas |
 | Deploy to Lambda | `aws lambda update-function-code` | Permissões IAM, função não existe |
 | Wait for update | Aguarda Lambda ficar em estado `Active` | Timeout (função não atualiza) |
-| Update Lambda handler | `aws lambda update-function-configuration --handler "VideoProcessing.Auth.Api"` — garante Handler correto (Lambdas criadas como "casca") | Permissão `lambda:UpdateFunctionConfiguration` |
-| Verify deployment | Mostra informações da função (inclui Handler na tabela) | Falha de leitura (não crítico) |
+| Verify deployment | Mostra informações da função (nome, última modificação, runtime, estado) | Falha de leitura (não crítico) |
 | Update Lambda environment variables (Cognito + GATEWAY_PATH_PREFIX) | Mescla Cognito (se Variables setadas) e GATEWAY_PATH_PREFIX nas env vars do Lambda | Erro ao obter/atualizar configuração |
 | Upload artifact | Salva ZIP como artifact do workflow | Falha de upload (não crítico) |
 

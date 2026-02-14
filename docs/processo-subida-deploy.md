@@ -63,7 +63,7 @@ Ao rodar manualmente: **Actions** → **Deploy Lambda Auth API** → **Run workf
 | **GitHub Variables** | Opcional: `AWS_REGION`, `LAMBDA_FUNCTION_NAME`; para injetar Cognito no Lambda: `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`; para prefixo do API Gateway: `GATEWAY_PATH_PREFIX` (ex.: `/auth`) |
 | **Lambda (AWS)** | Se não usar Variables do Cognito no workflow: configurar manualmente no Lambda `Cognito__Region`, `Cognito__UserPoolId`, `Cognito__ClientId` |
 
-O **Handler** da função Lambda é configurado automaticamente pelo workflow de deploy com o valor `VideoProcessing.Auth.Api`. Não é necessário configurar o Handler manualmente na AWS quando a Lambda for criada como "casca"; o step **Update Lambda handler** da action aplica esse valor em todo deploy.
+O **Handler** da função Lambda deve ser configurado via IaC (Terraform/CloudFormation) na criação da função.
 
 ---
 
