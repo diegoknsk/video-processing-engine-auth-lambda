@@ -9,37 +9,25 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      lambda_function_name:
-        description: 'Nome do Lambda (opcional, usa variável se vazio)'
-        required: false
+      branch:
+        description: 'Branch para deploy'
+        required: true
         type: string
-      aws_region:
-        description: 'Região AWS (opcional, usa variável se vazio)'
-        required: false
-        type: string
-      gateway_path_prefix:
-        description: 'Prefixo de path do API Gateway (ex.: /auth). Opcional; usa variável GATEWAY_PATH_PREFIX se vazio.'
-        required: false
-        type: string
-      gateway_stage:
-        description: 'Stage do API Gateway HTTP API quando não é $default (ex.: dev). Opcional; usa variável GATEWAY_STAGE se vazio.'
-        required: false
-        type: string
+        default: 'main'
 
 env:
   DOTNET_VERSION: '10.0.x'
-  # Região: input manual > variable > padrão
-  AWS_REGION: ${{ inputs.aws_region || vars.AWS_REGION || 'us-east-1' }}
-  LAMBDA_FUNCTION_NAME: ${{ inputs.lambda_function_name || vars.LAMBDA_FUNCTION_NAME || 'video-processing-engine-dev-auth' }}
-  # Cognito: usados para injetar env vars no Lambda (opcional; valores de referência em appsettings.Development.json)
+  # Valores via variáveis do repositório/ambiente (Settings > Variables). Ver docs/deploy-github-actions.md
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  LAMBDA_FUNCTION_NAME: ${{ vars.LAMBDA_FUNCTION_NAME || 'video-processing-engine-dev-auth' }}
   COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
   COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-  # Prefixo de path quando a Lambda está atrás do API Gateway. Vazio na Action = usa /auth (padrão). Ver docs/gateway-path-prefix.md
-  GATEWAY_PATH_PREFIX: ${{ inputs.gateway_path_prefix || vars.GATEWAY_PATH_PREFIX || '/auth' }}
-  # Stage do API Gateway (ex.: dev). Necessário para path .../dev/auth e para o Scalar montar a URL correta.
-  GATEWAY_STAGE: ${{ inputs.gateway_stage || vars.GATEWAY_STAGE }}
-  # URL base pública (stage + prefixo) para o Scalar UI "Try it". Opcional; normalmente derivado do request.
+  GATEWAY_PATH_PREFIX: ${{ vars.GATEWAY_PATH_PREFIX || '/auth' }}
+  GATEWAY_STAGE: ${{ vars.GATEWAY_STAGE }}
   API_PUBLIC_BASE_URL: ${{ vars.API_PUBLIC_BASE_URL }}
+
+  # Ref para checkout (manual run usa branch do input; push/PR usa ref do evento)
+  DEPLOY_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
 
 jobs:
   build-and-deploy:
@@ -54,6 +42,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_REF }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
