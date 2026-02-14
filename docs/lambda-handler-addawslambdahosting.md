@@ -165,6 +165,10 @@ Para testar pelo console da Lambda, use evento no formato **API Gateway HTTP API
 
 ---
 
-## 7. Prefixo de path no API Gateway (GATEWAY_PATH_PREFIX)
+## 7. Prefixo de path e stage no API Gateway (GATEWAY_PATH_PREFIX e GATEWAY_STAGE)
 
-Quando a Lambda está atrás de um API Gateway que expõe rotas com prefixo (ex.: `/auth/*`), o path que chega na Lambda inclui esse prefixo (ex.: `rawPath = "/auth/health"`). Para que a aplicação roteie corretamente sem alterar as rotas no código, use a variável de ambiente **`GATEWAY_PATH_PREFIX`** (ex.: `/auth`). Se não definida ou vazia, o path não é alterado (comportamento atual). A comparação do prefixo é **case-insensitive**. Detalhes em [gateway-path-prefix.md](gateway-path-prefix.md).
+Quando a Lambda está atrás de um API Gateway que expõe rotas com prefixo (ex.: `/auth/*`), o path que chega na Lambda inclui esse prefixo (ex.: `rawPath = "/auth/health"`). Para que a aplicação roteie corretamente sem alterar as rotas no código, use a variável de ambiente **`GATEWAY_PATH_PREFIX`** (ex.: `/auth`). Se não definida ou vazia, o path não é alterado (comportamento atual). A comparação do prefixo é **case-insensitive**.
+
+Quando o API Gateway HTTP API usa um **stage nomeado** (não `$default`), o path que chega na Lambda inclui o stage (ex.: `rawPath = "/default/health"`). Nesse caso, defina **`GATEWAY_STAGE`** com o nome do stage (ex.: `default`) para que o middleware remova esse segmento e a rota `/health` seja encontrada. Se usar o stage `$default`, não defina `GATEWAY_STAGE`.
+
+Detalhes em [gateway-path-prefix.md](gateway-path-prefix.md).

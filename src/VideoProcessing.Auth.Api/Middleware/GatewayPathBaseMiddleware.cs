@@ -8,13 +8,36 @@ namespace VideoProcessing.Auth.Api.Middleware;
 /// definindo PathBase e Path para que a aplicação seja agnóstica ao prefixo do API Gateway.
 /// Quando a variável não está definida ou está vazia, o path não é alterado.
 /// A comparação do prefixo é case-insensitive.
+/// Opcionalmente remove o segmento de stage do API Gateway (GATEWAY_STAGE) quando o stage não é $default.
 /// </summary>
 public class GatewayPathBaseMiddleware(RequestDelegate next, ILogger<GatewayPathBaseMiddleware> logger)
 {
     private const string GatewayPathPrefixKey = "GATEWAY_PATH_PREFIX";
+    private const string GatewayStageKey = "GATEWAY_STAGE";
 
     public Task InvokeAsync(HttpContext context)
     {
+        var path = context.Request.Path.Value ?? "/";
+
+        // 1) Remover stage do path quando API Gateway usa stage nomeado (não $default).
+        // Ex.: rawPath "/default/health" com GATEWAY_STAGE=default → path "/health".
+        var stage = Environment.GetEnvironmentVariable(GatewayStageKey)?.Trim();
+        if (!string.IsNullOrEmpty(stage))
+        {
+            var stageSegment = (stage.StartsWith('/') ? stage : "/" + stage).TrimEnd('/');
+            if (stageSegment.Length > 1 && path.StartsWith(stageSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                if (path.Length == stageSegment.Length || (path.Length > stageSegment.Length && path[stageSegment.Length] == '/'))
+                {
+                    path = path.Length == stageSegment.Length ? "/" : path[stageSegment.Length..];
+                    context.Request.Path = new PathString(path);
+                    logger.LogDebug(
+                        "GATEWAY_STAGE applied: path after strip = {Path}",
+                        path);
+                }
+            }
+        }
+
         var prefix = Environment.GetEnvironmentVariable(GatewayPathPrefixKey)?.Trim();
         if (string.IsNullOrEmpty(prefix))
         {
@@ -26,8 +49,6 @@ public class GatewayPathBaseMiddleware(RequestDelegate next, ILogger<GatewayPath
         {
             prefixNormalized = prefixNormalized.TrimEnd('/');
         }
-
-        var path = context.Request.Path.Value ?? "/";
         if (path.Length < prefixNormalized.Length)
         {
             return next(context);
