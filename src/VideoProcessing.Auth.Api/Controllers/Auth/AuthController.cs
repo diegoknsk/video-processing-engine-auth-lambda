@@ -9,7 +9,7 @@ namespace VideoProcessing.Auth.Api.Controllers.Auth;
 /// Controller para operações de autenticação.
 /// </summary>
 [ApiController]
-[Route("auth")]
+[Route("login")]
 public class AuthController : ControllerBase
 {
     private readonly LoginUseCase _loginUseCase;
@@ -37,13 +37,13 @@ public class AuthController : ControllerBase
     /// A senha deve atender aos requisitos de política configurados no Cognito User Pool.
     /// Os tokens retornados devem ser incluídos no header Authorization das requisições subsequentes às APIs protegidas.
     /// </remarks>
-    [HttpPost("login")]
+    [HttpPost]
     [ProducesResponseType(typeof(LoginResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginInput input, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("POST /auth/login called for user {Email}", input.Email);
+        _logger.LogInformation("POST /login called for user {Email}", input.Email);
 
         var result = await _loginUseCase.ExecuteAsync(input, cancellationToken);
 

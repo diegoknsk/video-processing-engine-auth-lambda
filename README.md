@@ -12,13 +12,14 @@ API de autenticação para Video Processing Engine usando Amazon Cognito.
 - **Configuração API Gateway**: Veja [docs/api-gateway-configuration.md](./docs/api-gateway-configuration.md)
 - **Contexto Arquitetural**: Veja [docs/contexto-arquitetural.md](./docs/contexto-arquitetural.md)
 - **Deploy e CI/CD**: Veja [docs/deploy-github-actions.md](./docs/deploy-github-actions.md)
+- **Prefixo de path no API Gateway**: Veja [docs/gateway-path-prefix.md](./docs/gateway-path-prefix.md) (variável `GATEWAY_PATH_PREFIX` para uso atrás de gateway com prefixo, ex.: `/auth`)
 
 ## 🚀 Endpoints
 
 ### Autenticação
 
-- **POST** `/auth/login` - Autentica usuário e retorna tokens JWT
-- **POST** `/auth/users/create` - Cria novo usuário no sistema
+- **POST** `/login` - Autentica usuário e retorna tokens JWT
+- **POST** `/users/create` - Cria novo usuário no sistema
 
 ### Health Check
 
@@ -94,7 +95,7 @@ Configure as variáveis de ambiente ou `appsettings.json`:
 
 A aplicação requer credenciais IAM com as seguintes permissões no Amazon Cognito User Pool:
 
-- `cognito-idp:AdminCreateUser` - Necessária para criar usuários via endpoint `POST /auth/users/create`
+- `cognito-idp:AdminCreateUser` - Necessária para criar usuários via endpoint `POST /users/create`
 - `cognito-idp:AdminSetUserPassword` - Necessária para definir senha permanente após criação do usuário
 
 **Exemplo de política IAM mínima:**

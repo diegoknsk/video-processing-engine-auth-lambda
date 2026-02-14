@@ -97,7 +97,8 @@ builder.Services.AddScoped<VideoProcessing.Auth.Application.UseCases.Auth.Create
 
 var app = builder.Build();
 
-// Middleware pipeline
+// Middleware pipeline — PathBase do gateway primeiro (quando GATEWAY_PATH_PREFIX definida)
+app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GatewayPathBaseMiddleware>();
 app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GlobalExceptionMiddleware>();
 
 // HTTPS redirection apenas local: no Lambda o API Gateway já faz HTTPS
