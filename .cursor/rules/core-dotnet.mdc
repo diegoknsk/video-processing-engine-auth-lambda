@@ -183,3 +183,4 @@ app.MapPost("/users", async (CreateUserInput input, IUseCase useCase) =>
 | Logging, métricas, tracing, OpenTelemetry, health check, observabilidade | `observability` | `.cursor/skills/observability/SKILL.md` |
 | Performance, otimização, Span, ArrayPool, ValueTask, alocações, hot path | `performance-optimization` | `.cursor/skills/performance-optimization/SKILL.md` |
 | Segurança, JWT, autenticação, autorização, secrets, rate limiting, CORS | `security` | `.cursor/skills/security/SKILL.md` |
+| Lambda API com AddAWSLambdaHosting, API Gateway, GATEWAY_PATH_PREFIX, GATEWAY_STAGE, OpenAPI atrás do gateway | `lambda-api-hosting` | `.cursor/skills/lambda-api-hosting/SKILL.md` |
