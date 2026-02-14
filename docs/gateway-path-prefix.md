@@ -10,6 +10,7 @@ O **middleware** `GatewayPathBaseMiddleware` remove o stage (quando configurado)
 |------|-------------|-----------|
 | `GATEWAY_PATH_PREFIX` | Não | Prefixo de path que o gateway adiciona antes de encaminhar para a Lambda (ex.: `/auth`, `/autenticacao`). |
 | `GATEWAY_STAGE` | Não | Nome do stage do API Gateway HTTP API quando **não** é `$default`. Quando o stage é nomeado (ex.: `default`), o path que chega na Lambda vem com o stage no início (ex.: `/default/health`). Defina com o nome do stage (ex.: `default`) para que o middleware remova esse segmento e a rota `/health` seja encontrada. Se usar o stage `$default`, não defina esta variável. |
+| `API_PUBLIC_BASE_URL` | Não | **Opcional.** URL pública base da API (ex.: `https://xxx.../dev/auth`). Na prática não é necessária: o server do OpenAPI é preenchido a partir do próprio request (Scheme + Host + PathBase) quando o Scalar solicita o JSON, então o "Try it" já usa a URL correta. Use só se o documento for gerado sem contexto de request (casos edge). |
 
 ## Comportamento
 
@@ -43,6 +44,7 @@ A ordem de aplicação é: primeiro remoção do stage (GATEWAY_STAGE), depois r
 2. Na **Lambda**, defina as variáveis de ambiente conforme o caso:
    - Se o HTTP API usar um **stage nomeado** (ex.: `default`) e não `$default`, defina **`GATEWAY_STAGE`** com o nome do stage (ex.: `default`). Assim, paths como `/default/health` passam a ser roteados como `/health`.
    - Se as rotas do gateway tiverem um prefixo (ex.: `/auth`), defina **`GATEWAY_PATH_PREFIX=/auth`** (ou o valor exato do prefixo que o gateway usa no path enviado à Lambda).
+   - Para que o **Scalar UI** (documentação interativa) monte as URLs corretas ao usar "Try it" quando acessado pelo gateway, defina **`API_PUBLIC_BASE_URL`** com a URL base pública completa, incluindo stage e prefixo (ex.: `https://h42x24ov55.execute-api.us-east-1.amazonaws.com/dev/auth`).
 3. A aplicação passa a receber o path já “sem” stage e sem prefixo para roteamento: `/health`, `/login`, `/users/create`.
 
 Em **Terraform** (exemplo):
@@ -53,6 +55,8 @@ resource "aws_lambda_function" "auth_api" {
   environment {
     variables = {
       GATEWAY_PATH_PREFIX = "/auth"
+      # URL base pública para o Scalar UI "Try it" (stage + prefixo):
+      # API_PUBLIC_BASE_URL = "https://xxx.execute-api.us-east-1.amazonaws.com/dev/auth"
       # Se o API Gateway HTTP API usar stage nomeado (não $default):
       # GATEWAY_STAGE = "default"
     }
@@ -60,7 +64,7 @@ resource "aws_lambda_function" "auth_api" {
 }
 ```
 
-Em **CloudFormation** ou **Console da AWS**: adicione as variáveis de ambiente na configuração da função (`GATEWAY_PATH_PREFIX`, e `GATEWAY_STAGE` quando o stage não for `$default`).
+Em **CloudFormation** ou **Console da AWS**: adicione as variáveis de ambiente na configuração da função (`GATEWAY_PATH_PREFIX`, `API_PUBLIC_BASE_URL` para o Scalar, e `GATEWAY_STAGE` quando o stage não for `$default`).
 
 ## Rotas da aplicação (agnósticas ao gateway)
 
