@@ -49,6 +49,17 @@ from assembly 'VideoProcessing.Auth.Api'.
 
 **Conclusão:** Com **AddAWSLambdaHosting** não devemos usar Handler no formato `Assembly::LambdaEntryPoint::FunctionHandlerAsync` a menos que se adicione explicitamente uma classe `LambdaEntryPoint` (o que não é o desejado aqui).
 
+### 2.3 Terceiro erro: Sandbox.Timedout (Task timed out after 3.00 seconds)
+
+```
+"errorType": "Sandbox.Timedout",
+"errorMessage": "RequestId: ... Error: Task timed out after 3.00 seconds"
+```
+
+**Causa:** O **timeout** da função Lambda está com o valor padrão da AWS (**3 segundos**). Uma Lambda .NET com ASP.NET Core Hosting precisa de tempo para **cold start** (inicialização do runtime, carregamento do assembly, startup da aplicação), que costuma levar **5–15+ segundos** na primeira invocação. Com timeout de 3 segundos, a função é interrompida antes de responder.
+
+**Solução:** Aumentar o **Timeout** da função para **pelo menos 30 segundos** (recomendado 30–60 s para APIs). Configurar na IaC (Terraform, CloudFormation, etc.) ou no Console AWS (Configuration → General configuration → Edit → Timeout). Opcionalmente, aumentar **Memory** (ex.: 512 MB) melhora CPU e pode reduzir cold start.
+
 ---
 
 ## 3. O que precisa ser definido (para investigação)
@@ -144,6 +155,8 @@ Ao provisionar a função Lambda (Terraform, CloudFormation, etc.):
 
 - **Runtime:** .NET 10 (C#/F#/PowerShell), conforme usado no publish.
 - **Handler:** **`VideoProcessing.Auth.Api`** (apenas o nome do assembly). Confirmado para **AddAWSLambdaHosting** sem `LambdaEntryPoint`.
+- **Timeout:** **mínimo 30 segundos** (recomendado 30–60 s). O padrão de 3 s causa `Sandbox.Timedout` no cold start (ver seção 2.3).
+- **Memory:** recomendado 512 MB ou mais (melhora CPU e cold start).
 - **Código:** O .zip deve ser o resultado de `dotnet publish` do projeto `VideoProcessing.Auth.Api` (linux-x64, mesmo que no workflow atual), com os arquivos na **raiz** do zip (incluindo `VideoProcessing.Auth.Api.dll`, deps, runtimeconfig, etc.).
 
 **Nota sobre deploy via GitHub Actions:** O workflow de deploy (`.github/workflows/deploy-lambda.yml`) já executa um step **Update Lambda handler** que configura o Handler com `VideoProcessing.Auth.Api` em todo deploy. Em deploys via GitHub Actions não é necessário configurar o Handler manualmente no IaC ou no Console — a menos que se queira um override explícito.
