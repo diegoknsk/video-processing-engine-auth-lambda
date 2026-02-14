@@ -5,34 +5,48 @@ description: Guia para persistência com EF Core, repositórios, DbContext, migr
 
 # Database Persistence — EF Core e Repositórios
 
-## Quando Usar Esta Skill
+## Quando Usar
 
-Use quando a tarefa envolver:
 - Criar ou modificar **repositórios**
 - Trabalhar com **EF Core**, **DbContext**, **migrations**
-- Queries e persistência de dados
+- Queries, persistência de dados
 - Palavras-chave: "banco", "database", "repositório", "EF Core", "migration", "DbContext", "query"
 
-## 1. Estrutura de Persistência
+## Princípios Essenciais
 
-- **Camada:** `<Projeto>.Infra.Persistence`
-- **DbContext** restrito a esta camada; não vaza para Application ou API.
-- **Entidades de persistência** separadas das entidades de domínio quando necessário.
+### ✅ Fazer
 
-```
-<Projeto>.Infra.Persistence/
-  Context/
-    AppDbContext.cs
-  Repositories/
-    <Contexto>/
-      UserRepository.cs
-      OrderRepository.cs
-  Configurations/           (EntityTypeConfiguration)
-    UserConfiguration.cs
-  Migrations/               (geradas automaticamente)
-```
+- Usar **Repository Pattern** (interface na Application/Ports, implementação na Infra.Persistence)
+- **AsNoTracking()** para queries read-only (melhor performance)
+- **Include()** para eager loading (evitar N+1 problem)
+- **Projeções** (Select) para buscar apenas dados necessários
+- **Paginação** para listagens grandes (Skip/Take)
+- **CancellationToken** em todas as operações assíncronas
+- **Fluent API** (IEntityTypeConfiguration) para configuração de entidades
 
-## 2. Repository Pattern
+### ❌ Não Fazer
+
+- **Nunca** expor DbContext para Application ou API (usar repositórios)
+- **Nunca** queries síncronas (ToList(), First() — sempre async)
+- **Nunca** lógica de negócio no repositório (apenas persistência)
+- **Nunca** esquecer AsNoTracking() em queries read-only
+- **Nunca** N+1 problem (sempre Include() relações)
+
+**Regra de ouro:** Repositórios fazem ponte entre Application e DB; DbContext fica escondido.
+
+## Checklist Rápido
+
+1. Criar interface na Application/Ports: `IUserRepository`
+2. Implementar repositório na Infra.Persistence: `UserRepository(AppDbContext context)`
+3. Criar Entity Configuration: `UserConfiguration : IEntityTypeConfiguration<User>`
+4. Aplicar configurações no DbContext: `modelBuilder.ApplyConfigurationsFromAssembly()`
+5. Registrar no DI: `AddDbContext<AppDbContext>()` + `AddScoped<IUserRepository, UserRepository>()`
+6. Criar migration: `dotnet ef migrations add InitialCreate`
+7. Aplicar migration: `dotnet ef database update` ou `context.Database.MigrateAsync()`
+
+## Exemplo Mínimo
+
+**Cenário:** Repositório de usuário com CRUD básico
 
 ### Interface (Application/Ports)
 
@@ -84,35 +98,27 @@ public class UserRepository(AppDbContext context) : IUserRepository
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var user = await context.Users.FindAsync([id], ct);
-        if (user != null)
-        {
-            context.Users.Remove(user);
-            await context.SaveChangesAsync(ct);
-        }
+        await context.Users.Where(u => u.Id == id).ExecuteDeleteAsync(ct); // EF Core 7+
     }
 }
 ```
 
-## 3. DbContext
+### DbContext
 
 ```csharp
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
-    public DbSet<Order> Orders => Set<Order>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
-        // Aplicar todas as configurações do assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }
 ```
 
-## 4. Entity Configuration (Fluent API)
+### Entity Configuration
 
 ```csharp
 public class UserConfiguration : IEntityTypeConfiguration<User>
@@ -120,123 +126,25 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("Users");
-        
         builder.HasKey(u => u.Id);
         
         builder.Property(u => u.Email)
             .IsRequired()
             .HasMaxLength(200);
         
-        builder.Property(u => u.Name)
-            .IsRequired()
-            .HasMaxLength(200);
-        
         builder.HasIndex(u => u.Email).IsUnique();
-        
-        builder.Property(u => u.CreatedAt)
-            .IsRequired();
     }
 }
 ```
 
-## 5. Migrations
-
-### Criar Migration
-
-```bash
-dotnet ef migrations add InitialCreate --project <Projeto>.Infra.Persistence --startup-project <Projeto>.Api
-```
-
-### Aplicar Migration
-
-```bash
-# Dev
-dotnet ef database update --project <Projeto>.Infra.Persistence --startup-project <Projeto>.Api
-
-# Produção (via código)
-public static async Task ApplyMigrationsAsync(this IServiceProvider services)
-{
-    using var scope = services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await context.Database.MigrateAsync();
-}
-
-// Em Program.cs
-if (app.Environment.IsProduction())
-{
-    await app.Services.ApplyMigrationsAsync();
-}
-```
-
-## 6. Queries Eficientes
-
-### Evitar N+1
-
-```csharp
-// ❌ N+1 Problem
-var orders = await context.Orders.ToListAsync();
-foreach (var order in orders)
-{
-    var user = await context.Users.FindAsync(order.UserId); // N queries
-}
-
-// ✅ Eager Loading
-var orders = await context.Orders
-    .Include(o => o.User)
-    .ToListAsync();
-```
-
-### Projeções
-
-```csharp
-// ✅ Projetar apenas o necessário
-var users = await context.Users
-    .AsNoTracking()
-    .Select(u => new UserSummaryDto
-    {
-        Id = u.Id,
-        Name = u.Name,
-        Email = u.Email
-    })
-    .ToListAsync(ct);
-```
-
-### AsNoTracking para Read-Only
-
-```csharp
-// ✅ Read-only queries
-var users = await context.Users
-    .AsNoTracking()
-    .Where(u => u.IsActive)
-    .ToListAsync(ct);
-```
-
-### Paginação
-
-```csharp
-public async Task<PagedResult<User>> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
-{
-    var totalCount = await context.Users.CountAsync(ct);
-    
-    var items = await context.Users
-        .AsNoTracking()
-        .OrderBy(u => u.CreatedAt)
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync(ct);
-    
-    return new PagedResult<User>(items, totalCount, page, pageSize);
-}
-```
-
-## 7. Registro no DI (Program.cs)
+### Configuração (Program.cs)
 
 ```csharp
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString); // ou UseNpgsql, UseSqlite, etc.
+    options.UseSqlServer(connectionString); // ou UseNpgsql, UseSqlite
     
     if (builder.Environment.IsDevelopment())
     {
@@ -247,135 +155,83 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Repositórios
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 ```
 
-## 8. Testes
+**Pontos-chave:**
+- **AsNoTracking()** em queries read-only (não rastreia mudanças, mais rápido)
+- **Paginação** com Skip/Take para listas grandes
+- **Fluent API** para configurações (melhor que Data Annotations)
+- **ExecuteDeleteAsync()** para delete direto (EF Core 7+, sem carregar entidade)
 
-### Testes Unitários (In-Memory)
+## Migrations
 
-```csharp
-public class UserRepositoryTests
+```bash
+# Criar migration
+dotnet ef migrations add InitialCreate --project <Projeto>.Infra.Persistence --startup-project <Projeto>.Api
+
+# Aplicar migration (dev)
+dotnet ef database update --project <Projeto>.Infra.Persistence --startup-project <Projeto>.Api
+
+# Aplicar migration (produção, via código)
+if (app.Environment.IsProduction())
 {
-    private AppDbContext CreateInMemoryContext()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        return new AppDbContext(options);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_WhenUserExists_ReturnsUser()
-    {
-        // Arrange
-        await using var context = CreateInMemoryContext();
-        var repository = new UserRepository(context);
-        var user = new User { Id = Guid.NewGuid(), Email = "test@test.com", Name = "Test" };
-        await repository.CreateAsync(user);
-
-        // Act
-        var result = await repository.GetByIdAsync(user.Id);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Email.Should().Be("test@test.com");
-    }
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await context.Database.MigrateAsync();
 }
 ```
 
-### Testes de Integração (Test Containers)
+## Queries Eficientes
 
 ```csharp
-public class DatabaseFixture : IAsyncLifetime
-{
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithDatabase("testdb")
-        .Build();
+// ✅ Eager Loading (evitar N+1)
+var orders = await context.Orders.Include(o => o.User).ToListAsync(ct);
 
-    public string ConnectionString => _container.GetConnectionString();
+// ✅ Projeção (apenas campos necessários)
+var users = await context.Users.AsNoTracking().Select(u => new { u.Id, u.Name }).ToListAsync(ct);
 
-    public async Task InitializeAsync() => await _container.StartAsync();
-    public async Task DisposeAsync() => await _container.DisposeAsync();
-}
-
-public class UserRepositoryIntegrationTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
-{
-    [Fact]
-    public async Task CreateAsync_ShouldPersistUser()
-    {
-        // Arrange
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(fixture.ConnectionString)
-            .Options;
-        
-        await using var context = new AppDbContext(options);
-        await context.Database.MigrateAsync();
-        
-        var repository = new UserRepository(context);
-        var user = new User { Id = Guid.NewGuid(), Email = "test@test.com", Name = "Test" };
-
-        // Act
-        await repository.CreateAsync(user);
-
-        // Assert
-        var result = await repository.GetByIdAsync(user.Id);
-        result.Should().NotBeNull();
-    }
-}
-```
-
-## 9. Boas Práticas
-
-- ✅ **AsNoTracking()** para queries read-only
-- ✅ **Include()** para eager loading (evitar N+1)
-- ✅ **Projeções** (Select) para buscar apenas dados necessários
-- ✅ **Paginação** para listagens grandes
-- ✅ **CancellationToken** em todas as operações assíncronas
-- ✅ **Entity Configuration** (Fluent API) para configuração de entidades
-- ❌ Evitar queries síncronas (ToList(), First(), etc.)
-- ❌ Evitar expor DbContext para camadas superiores
-- ❌ Evitar lógica de negócio nos repositórios (apenas persistência)
-
-## 10. Performance
-
-### Compiled Queries (.NET 7+)
-
-```csharp
+// ✅ Compiled Query (performance)
 private static readonly Func<AppDbContext, Guid, Task<User?>> GetUserByIdQuery =
-    EF.CompileAsyncQuery((AppDbContext context, Guid id) =>
-        context.Users.AsNoTracking().FirstOrDefault(u => u.Id == id));
+    EF.CompileAsyncQuery((AppDbContext ctx, Guid id) => ctx.Users.AsNoTracking().FirstOrDefault(u => u.Id == id));
 
-public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
-{
-    return await GetUserByIdQuery(context, id);
-}
+// ✅ Batch operations (EF Core 7+)
+await context.Users.Where(u => !u.IsActive).ExecuteDeleteAsync(ct);
 ```
 
-### Batch Operations
+## Estrutura de Pastas
+
+```
+<Projeto>.Infra.Persistence/
+  Context/
+    AppDbContext.cs
+  Repositories/
+    <Contexto>/
+      UserRepository.cs
+  Configurations/
+    UserConfiguration.cs
+  Migrations/              (geradas automaticamente)
+```
+
+## Testes
 
 ```csharp
-// ✅ Batch insert
-public async Task CreateManyAsync(IEnumerable<User> users, CancellationToken ct = default)
-{
-    context.Users.AddRange(users);
-    await context.SaveChangesAsync(ct);
-}
+// In-Memory Database
+var options = new DbContextOptionsBuilder<AppDbContext>()
+    .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+await using var context = new AppDbContext(options);
+var repository = new UserRepository(context);
 
-// ✅ Bulk delete (EF Core 7+)
-public async Task DeleteInactiveUsersAsync(CancellationToken ct = default)
-{
-    await context.Users
-        .Where(u => !u.IsActive)
-        .ExecuteDeleteAsync(ct);
-}
+// Arrange, Act, Assert
+var user = new User { Id = Guid.NewGuid(), Email = "test@test.com" };
+await repository.CreateAsync(user);
+var result = await repository.GetByIdAsync(user.Id);
+result.Should().NotBeNull();
 ```
 
-## 11. Connection Strings
-
-### appsettings.json
+## Connection Strings
 
 ```json
+// appsettings.json
 {
   "ConnectionStrings": {
     "DefaultConnection": ""
@@ -383,28 +239,16 @@ public async Task DeleteInactiveUsersAsync(CancellationToken ct = default)
 }
 ```
 
-### User Secrets (Dev)
-
 ```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=mydb;User Id=user;Password=pass;"
-```
+# User Secrets (dev)
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=mydb;..."
 
-### Variáveis de Ambiente (Prod)
-
-```bash
+# Variável de ambiente (prod)
 export ConnectionStrings__DefaultConnection="Server=prod;Database=mydb;..."
 ```
 
----
+## Referências
 
-## Resumo
-
-Esta skill cobre:
-- ✅ Repository pattern com EF Core
-- ✅ DbContext e configuração
-- ✅ Migrations
-- ✅ Queries eficientes e otimizações
-- ✅ Testes (unitários e integração)
-- ✅ Boas práticas de performance
-
-Sempre que trabalhar com **banco de dados, repositórios, EF Core ou migrations**, use esta skill como referência.
+- [EF Core Documentation](https://learn.microsoft.com/en-us/ef/core/)
+- [Query Performance](https://learn.microsoft.com/en-us/ef/core/performance/efficient-querying)
+- [Migrations](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/)

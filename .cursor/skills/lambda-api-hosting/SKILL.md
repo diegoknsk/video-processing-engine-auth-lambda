@@ -5,7 +5,7 @@ description: Guia para configurar API .NET 10 com AddAWSLambdaHosting, API Gatew
 
 # Lambda API Hosting e Gateway
 
-Orienta a configuração de APIs .NET 10 hospedadas em AWS Lambda com **AddAWSLambdaHosting** e os tratamentos de **API Gateway** (stage, prefixo de path) e **OpenAPI** (Scalar ou Swagger UI). Arquitetura (Clean Architecture, camadas) fica a cargo de outras rules/skills; esta skill foca em **bootstrap e gateway** para economizar tempo e evitar erros de path e documentação.
+Guia para configurar APIs .NET 10 hospedadas em AWS Lambda com **AddAWSLambdaHosting** e tratamento de **API Gateway** (stage, prefixo de path) e **OpenAPI** (Scalar ou Swagger UI).
 
 ---
 
@@ -13,12 +13,11 @@ Orienta a configuração de APIs .NET 10 hospedadas em AWS Lambda com **AddAWSLa
 
 - Criar nova Lambda com API .NET (endpoints)
 - Configurar **AddAWSLambdaHosting** em projeto ASP.NET Core
-- API exposta atrás de **API Gateway** HTTP API (v2) com prefixo de path e/ou stage nomeado
+- API atrás de **API Gateway HTTP API (v2)** com prefixo de path e/ou stage nomeado
 - **GATEWAY_PATH_PREFIX**, **GATEWAY_STAGE** — variáveis e middleware de path
-- Documentação **OpenAPI** (Scalar ou Swagger UI) quando a API está atrás do gateway
-- Handler da Lambda, timeout, evento HTTP API v2 para testes no console
+- Documentação **OpenAPI** (Scalar ou Swagger) quando API está atrás do gateway
 
-**O que esta skill não cobre:** decisões de Clean Architecture, camadas, UseCases/Controllers (ver `core-clean-architecture` e `core-dotnet`).
+**Não cobre:** Clean Architecture, camadas, UseCases/Controllers (ver `core-clean-architecture` e `core-dotnet`).
 
 ---
 
