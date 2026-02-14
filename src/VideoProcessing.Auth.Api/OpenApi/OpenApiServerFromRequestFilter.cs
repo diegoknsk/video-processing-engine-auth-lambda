@@ -4,11 +4,14 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace VideoProcessing.Auth.Api.OpenApi;
 
 /// <summary>
-/// Preenche o server do OpenAPI a partir do request atual quando disponível (Scheme + Host + PathBase).
-/// Assim o Scalar UI monta as URLs do "Try it" corretamente atrás do gateway sem precisar de API_PUBLIC_BASE_URL.
+/// Preenche o server do OpenAPI a partir do request (Scheme + Host + stage + PathBase).
+/// O middleware define PathBase só com o prefixo (/auth); o stage (/dev) já foi removido do path.
+/// Por isso lemos GATEWAY_STAGE e preprendemos ao path do server para o Scalar montar a URL correta.
 /// </summary>
 public sealed class OpenApiServerFromRequestFilter(IHttpContextAccessor httpContextAccessor) : IDocumentFilter
 {
+    private const string GatewayStageKey = "GATEWAY_STAGE";
+
     public void Apply(OpenApiDocument document, DocumentFilterContext context)
     {
         var httpContext = httpContextAccessor.HttpContext;
@@ -23,7 +26,18 @@ public sealed class OpenApiServerFromRequestFilter(IHttpContextAccessor httpCont
         if (string.IsNullOrEmpty(host))
             return;
 
-        var serverUrl = $"{scheme}://{host}{pathBase}".TrimEnd('/');
+        // PathBase no request é só o prefixo (/auth); o stage (/dev) foi removido pelo middleware.
+        // Incluímos o stage no server URL para o Scalar gerar .../dev/auth/login.
+        var stage = Environment.GetEnvironmentVariable(GatewayStageKey)?.Trim();
+        var stageSegment = string.IsNullOrEmpty(stage)
+            ? ""
+            : "/" + (stage.StartsWith('/') ? stage.TrimStart('/') : stage).TrimEnd('/');
+
+        var pathPart = $"{stageSegment}{pathBase}".TrimEnd('/');
+        if (!string.IsNullOrEmpty(pathPart) && !pathPart.StartsWith('/'))
+            pathPart = "/" + pathPart;
+
+        var serverUrl = $"{scheme}://{host}{pathPart}".TrimEnd('/');
         document.Servers.Clear();
         document.Servers.Add(new OpenApiServer
         {
