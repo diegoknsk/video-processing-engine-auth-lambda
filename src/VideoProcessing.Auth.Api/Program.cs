@@ -49,17 +49,19 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
     }
     
-    // Configuração de base path para API Gateway (pode ser configurado via variável de ambiente)
-    // Exemplo comentado para referência:
-    // var baseUrl = builder.Configuration["API_BASE_URL"] ?? "http://localhost:5000";
-    // options.AddServer(new OpenApiServer 
-    // { 
-    //     Url = baseUrl,
-    //     Description = "API Gateway endpoint"
-    // });
-    // Para múltiplos stages:
-    // options.AddServer(new OpenApiServer { Url = "https://api.example.com/prod", Description = "Production (API Gateway stage: prod)" });
-    // options.AddServer(new OpenApiServer { Url = "https://api.example.com/dev", Description = "Development (API Gateway stage: dev)" });
+    // Server do OpenAPI: preenchido pelo filter a partir do request (Scheme + Host + PathBase) quando
+    // o doc é gerado no pipeline. Assim atrás do gateway não é necessário API_PUBLIC_BASE_URL.
+    // Fallback: se API_PUBLIC_BASE_URL estiver definida, usa como server (útil se o doc for gerado sem request).
+    var apiPublicBaseUrl = builder.Configuration["API_PUBLIC_BASE_URL"];
+    if (!string.IsNullOrWhiteSpace(apiPublicBaseUrl))
+    {
+        options.AddServer(new OpenApiServer
+        {
+            Url = apiPublicBaseUrl.Trim().TrimEnd('/'),
+            Description = "API Gateway (stage + path prefix)"
+        });
+    }
+    options.DocumentFilter<VideoProcessing.Auth.Api.OpenApi.OpenApiServerFromRequestFilter>();
 });
 
 // FluentValidation
