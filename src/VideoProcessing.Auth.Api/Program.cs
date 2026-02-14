@@ -97,7 +97,10 @@ builder.Services.AddScoped<VideoProcessing.Auth.Application.UseCases.Auth.Create
 
 var app = builder.Build();
 
-// Middleware pipeline
+// Middleware pipeline — PathBase do gateway primeiro (quando GATEWAY_PATH_PREFIX definida).
+// UseRouting() deve vir logo após alterar o path para que o endpoint seja selecionado com o path já reescrito (ver aspnetcore#49454).
+app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GatewayPathBaseMiddleware>();
+app.UseRouting();
 app.UseMiddleware<VideoProcessing.Auth.Api.Middleware.GlobalExceptionMiddleware>();
 
 // HTTPS redirection apenas local: no Lambda o API Gateway já faz HTTPS

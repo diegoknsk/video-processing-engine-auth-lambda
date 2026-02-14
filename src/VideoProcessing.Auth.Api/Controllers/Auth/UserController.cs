@@ -9,7 +9,7 @@ namespace VideoProcessing.Auth.Api.Controllers.Auth;
 /// Controller para operações de gerenciamento de usuários.
 /// </summary>
 [ApiController]
-[Route("auth/users")]
+[Route("users")]
 public class UserController : ControllerBase
 {
     private readonly CreateUserUseCase _createUserUseCase;
@@ -36,7 +36,7 @@ public class UserController : ControllerBase
     /// <remarks>
     /// name: nome do usuário (ex.: "Diego"). email: endereço de email válido e único, usado como identificador de login no Cognito quando o pool usa sign-in por email.
     /// Se o Cognito User Pool estiver configurado para exigir confirmação, o usuário receberá um código por email/SMS e precisará confirmar a conta antes de poder fazer login.
-    /// Após a criação bem-sucedida, use o email e a senha no endpoint POST /auth/login.
+    /// Após a criação bem-sucedida, use o email e a senha no endpoint POST /login.
     /// </remarks>
     [HttpPost("create")]
     [ProducesResponseType(typeof(CreateUserResponseModel), StatusCodes.Status201Created)]
@@ -45,7 +45,7 @@ public class UserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateUserInput input, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("POST /auth/users/create called for email {Email}", input.Email);
+        _logger.LogInformation("POST /users/create called for email {Email}", input.Email);
 
         var result = await _createUserUseCase.ExecuteAsync(input, cancellationToken);
 

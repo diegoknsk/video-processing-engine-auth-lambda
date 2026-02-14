@@ -27,8 +27,9 @@ O workflow `.github/workflows/deploy-lambda.yml` automatiza o processo de build,
 6. Publish para linux-x64
 7. Criação do ZIP de deployment
 8. Deploy no Lambda via AWS CLI
-9. Verificação do deploy
-10. Upload do artifact (ZIP)
+9. Wait for Lambda update to complete
+10. Verificação do deploy
+11. Upload do artifact (ZIP)
 ```
 
 ## ☁️ Pré-requisitos AWS
@@ -40,7 +41,7 @@ A função Lambda deve estar previamente criada na AWS (via Terraform/CloudForma
 - **Nome padrão:** `video-processing-engine-dev-auth`
 - **Runtime:** `dotnet8` ou `dotnet6` com bootstrap customizado
 - **Arquitetura:** x86_64
-- **Handler:** Configurado para ASP.NET Core Lambda (`VideoProcessing.Auth.Api`)
+- **Handler:** Definido via IaC (ex.: `VideoProcessing.Auth.Api`)
 
 ### 2. IAM User/Role para Deploy
 
@@ -56,7 +57,9 @@ O workflow precisa de credenciais AWS com as seguintes permissões:
       "Effect": "Allow",
       "Action": [
         "lambda:UpdateFunctionCode",
-        "lambda:GetFunction"
+        "lambda:GetFunction",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:GetFunctionConfiguration"
       ],
       "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function/video-processing-engine-dev-auth"
     }
@@ -64,7 +67,7 @@ O workflow precisa de credenciais AWS com as seguintes permissões:
 }
 ```
 
-**Nota:** O workflow atualiza variáveis de ambiente do Lambda (Cognito) quando as GitHub Variables `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estão setadas; nesse caso o IAM precisa de `lambda:GetFunctionConfiguration` e `lambda:UpdateFunctionConfiguration`.
+**Nota:** O workflow atualiza as variáveis de ambiente do Lambda quando as GitHub Variables `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estão setadas. Por isso a policy inclui `lambda:UpdateFunctionConfiguration` e `lambda:GetFunctionConfiguration`.
 
 #### Criar IAM User para CI/CD
 
@@ -139,8 +142,9 @@ Configure as seguintes **Variables** no repositório GitHub: `Settings > Secrets
 | `LAMBDA_FUNCTION_NAME` | Nome da função Lambda | `video-processing-engine-dev-auth` | Se a função tiver nome diferente |
 | `COGNITO_USER_POOL_ID` | ID do Cognito User Pool (injetado no Lambda como `Cognito__UserPoolId`) | — | Para o workflow atualizar env vars do Lambda |
 | `COGNITO_CLIENT_ID` | App Client ID do Cognito (injetado no Lambda como `Cognito__ClientId`) | — | Idem |
+| `GATEWAY_PATH_PREFIX` | Prefixo de path do API Gateway (ex.: `/auth`). Injetado no Lambda; ver [gateway-path-prefix.md](gateway-path-prefix.md). | — (vazio) | Quando a Lambda estiver atrás de um gateway com prefixo (ex.: rotas `/auth/*`) |
 
-**Nota:** Se `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estiverem configurados, o workflow mescla essas variáveis nas env vars do Lambda após o deploy. Valores de referência podem ser os do `appsettings.Development.json` (seção Cognito). Processo completo de subida e checklist: [processo-subida-deploy.md](./processo-subida-deploy.md).
+**Nota:** O workflow atualiza as variáveis de ambiente do Lambda em todo deploy: mescla Cognito (se `COGNITO_USER_POOL_ID` e `COGNITO_CLIENT_ID` estiverem configurados) e **GATEWAY_PATH_PREFIX** (valor da Variable; vazio = path inalterado). Processo completo: [processo-subida-deploy.md](./processo-subida-deploy.md).
 
 ## 🚀 Como Funciona o Workflow
 
@@ -159,7 +163,7 @@ Você pode executar o workflow manualmente em **qualquer branch**:
 
 1. Vá para: `Actions > Deploy Lambda Auth API > Run workflow`
 2. Selecione a branch desejada
-3. (Opcional) Especifique uma branch customizada no input `branch`
+3. (Opcional) Preencha os inputs: `lambda_function_name`, `aws_region`, `gateway_path_prefix` (ex.: `/auth`)
 4. Clique em `Run workflow`
 
 **Casos de uso:**
@@ -183,8 +187,8 @@ Você pode executar o workflow manualmente em **qualquer branch**:
 | Configure AWS credentials | Configura AWS CLI com secrets | Credenciais inválidas |
 | Deploy to Lambda | `aws lambda update-function-code` | Permissões IAM, função não existe |
 | Wait for update | Aguarda Lambda ficar em estado `Active` | Timeout (função não atualiza) |
-| Verify deployment | Mostra informações da função | Falha de leitura (não crítico) |
-| Update Lambda environment variables (Cognito) | Mescla Cognito (Region, UserPoolId, ClientId) nas env vars do Lambda | Só roda se Variables COGNITO_* estiverem setadas |
+| Verify deployment | Mostra informações da função (nome, última modificação, runtime, estado) | Falha de leitura (não crítico) |
+| Update Lambda environment variables (Cognito + GATEWAY_PATH_PREFIX) | Mescla Cognito (se Variables setadas) e GATEWAY_PATH_PREFIX nas env vars do Lambda | Erro ao obter/atualizar configuração |
 | Upload artifact | Salva ZIP como artifact do workflow | Falha de upload (não crítico) |
 
 #### Job: `test-coverage` (Comentado - Futura)

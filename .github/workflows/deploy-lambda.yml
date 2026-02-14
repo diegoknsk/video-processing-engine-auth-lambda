@@ -17,6 +17,10 @@ on:
         description: 'Região AWS (opcional, usa variável se vazio)'
         required: false
         type: string
+      gateway_path_prefix:
+        description: 'Prefixo de path do API Gateway (ex.: /auth). Opcional; usa variável GATEWAY_PATH_PREFIX se vazio.'
+        required: false
+        type: string
 
 env:
   DOTNET_VERSION: '10.0.x'
@@ -26,6 +30,8 @@ env:
   # Cognito: usados para injetar env vars no Lambda (opcional; valores de referência em appsettings.Development.json)
   COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
   COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+  # Prefixo de path quando a Lambda está atrás do API Gateway. Vazio na Action = usa /auth (padrão). Ver docs/gateway-path-prefix.md
+  GATEWAY_PATH_PREFIX: ${{ inputs.gateway_path_prefix || vars.GATEWAY_PATH_PREFIX || '/auth' }}
 
 jobs:
   build-and-deploy:
@@ -110,21 +116,25 @@ jobs:
             --query 'Configuration.[FunctionName,LastModified,Runtime,State]' \
             --output table
 
-      - name: Update Lambda environment variables (Cognito)
-        if: github.event_name != 'pull_request' && env.COGNITO_USER_POOL_ID != '' && env.COGNITO_CLIENT_ID != ''
+      - name: Update Lambda environment variables (Cognito + GATEWAY_PATH_PREFIX)
+        if: github.event_name != 'pull_request'
         env:
           COGNITO_REGION: ${{ env.AWS_REGION }}
           COGNITO_USER_POOL_ID: ${{ env.COGNITO_USER_POOL_ID }}
           COGNITO_CLIENT_ID: ${{ env.COGNITO_CLIENT_ID }}
+          GATEWAY_PATH_PREFIX: ${{ env.GATEWAY_PATH_PREFIX }}
         run: |
-          # Mescla variáveis existentes do Lambda com Cognito (update-function-configuration substitui todas se não mesclarmos)
+          # Mescla variáveis existentes do Lambda com Cognito (se definidos) e GATEWAY_PATH_PREFIX (ver docs/gateway-path-prefix.md)
           EXISTING=$(aws lambda get-function-configuration \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --region ${{ env.AWS_REGION }} \
             --query 'Environment.Variables' \
             --output json)
-          MERGED=$(echo "$EXISTING" | jq -c --arg r "$COGNITO_REGION" --arg pid "$COGNITO_USER_POOL_ID" --arg cid "$COGNITO_CLIENT_ID" \
-            '(if . == null then {} else . end) + {Cognito__Region: $r, Cognito__UserPoolId: $pid, Cognito__ClientId: $cid}')
+          MERGED=$(echo "$EXISTING" | jq -c \
+            --arg r "$COGNITO_REGION" --arg pid "$COGNITO_USER_POOL_ID" --arg cid "$COGNITO_CLIENT_ID" --arg gpp "$GATEWAY_PATH_PREFIX" \
+            '(if . == null then {} else . end)
+            + (if $pid != "" and $cid != "" then {Cognito__Region: $r, Cognito__UserPoolId: $pid, Cognito__ClientId: $cid} else {} end)
+            + {GATEWAY_PATH_PREFIX: $gpp}')
           aws lambda update-function-configuration \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
             --region ${{ env.AWS_REGION }} \

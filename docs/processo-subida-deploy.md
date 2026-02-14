@@ -28,8 +28,9 @@ Configurar em: **Settings** → **Secrets and variables** → **Actions** → **
 | **LAMBDA_FUNCTION_NAME** | Nome da função Lambda | `video-processing-engine-dev-auth` |
 | **COGNITO_USER_POOL_ID** | ID do Cognito User Pool (injetado no Lambda como `Cognito__UserPoolId`) | — |
 | **COGNITO_CLIENT_ID** | App Client ID do Cognito (injetado no Lambda como `Cognito__ClientId`) | — |
+| **GATEWAY_PATH_PREFIX** | Prefixo de path do API Gateway (ex.: `/auth`). Injetado no Lambda; quando a API está atrás de um gateway com prefixo, a aplicação remove esse prefixo do path. Deixe vazio se não usar prefixo. Ver [gateway-path-prefix.md](gateway-path-prefix.md). | — (vazio = path inalterado) |
 
-- Se **COGNITO_USER_POOL_ID** e **COGNITO_CLIENT_ID** estiverem preenchidos, o workflow **atualiza as variáveis de ambiente do Lambda** (Cognito) no deploy, mesclando com as variáveis já existentes na função.
+- O workflow **atualiza as variáveis de ambiente do Lambda** em todo deploy (Cognito, se as Variables acima estiverem preenchidas, e **GATEWAY_PATH_PREFIX**). As variáveis são mescladas com as já existentes na função.
 - Valores de referência (ex.: ambiente de desenvolvimento) estão em `src/VideoProcessing.Auth.Api/appsettings.Development.json` (seção `Cognito`). Exemplo:
 
 ```json
@@ -50,6 +51,7 @@ Ao rodar manualmente: **Actions** → **Deploy Lambda Auth API** → **Run workf
 |-------|-------------|-----------|
 | **lambda_function_name** | Não | Override do nome do Lambda |
 | **aws_region** | Não | Override da região AWS |
+| **gateway_path_prefix** | Não | Override do prefixo de path do API Gateway (ex.: `/auth`). Usa a Variable `GATEWAY_PATH_PREFIX` se vazio. |
 
 ---
 
@@ -58,8 +60,10 @@ Ao rodar manualmente: **Actions** → **Deploy Lambda Auth API** → **Run workf
 | Onde | O que setar |
 |------|-------------|
 | **GitHub Secrets** | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`; se usar token/STS: `AWS_SESSION_TOKEN` |
-| **GitHub Variables** | Opcional: `AWS_REGION`, `LAMBDA_FUNCTION_NAME`; para injetar Cognito no Lambda: `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID` |
+| **GitHub Variables** | Opcional: `AWS_REGION`, `LAMBDA_FUNCTION_NAME`; para injetar Cognito no Lambda: `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`; para prefixo do API Gateway: `GATEWAY_PATH_PREFIX` (ex.: `/auth`) |
 | **Lambda (AWS)** | Se não usar Variables do Cognito no workflow: configurar manualmente no Lambda `Cognito__Region`, `Cognito__UserPoolId`, `Cognito__ClientId` |
+
+O **Handler** da função Lambda deve ser configurado via IaC (Terraform/CloudFormation) na criação da função.
 
 ---
 
