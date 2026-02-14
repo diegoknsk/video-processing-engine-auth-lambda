@@ -187,3 +187,4 @@ Task<CreateOrderResponseModel> ExecuteAsync(
 | Logging, métricas, tracing, health checks na API | `observability` | `.cursor/skills/observability/SKILL.md` |
 | Otimização de repositórios ou UseCases (queries, alocações) | `performance-optimization` | `.cursor/skills/performance-optimization/SKILL.md` |
 | Autenticação (filtro, JWT), autorização, secrets, proteção de endpoints | `security` | `.cursor/skills/security/SKILL.md` |
+| Lambda API com AddAWSLambdaHosting, API Gateway, GATEWAY_PATH_PREFIX, GATEWAY_STAGE, OpenAPI atrás do gateway | `lambda-api-hosting` | `.cursor/skills/lambda-api-hosting/SKILL.md` |
