@@ -1,186 +1,22 @@
 ---
 alwaysApply: true
-description: "Convenções essenciais de desenvolvimento .NET — código idiomático, nomenclatura, sintaxe moderna e padrões universais."
+description: "Convenções essenciais .NET — código idiomático, nomenclatura, C# moderno e padrões universais. Quick reference e skills por contexto."
 ---
 
 # Core .NET — Convenções Universais
 
-## 1. Perfil e Estilo
+- Código **conciso e idiomático**, seguindo convenções Microsoft; **.NET 10** (ou LTS) com **C# 13**.
+- Nomenclatura: PascalCase (tipos, métodos), camelCase (locais, campos privados), UPPERCASE (constantes), prefixo `I` em interfaces.
+- **Construtores primários** para DI; **collection expressions**; async/await para I/O; **System.Text.Json**; DI no bootstrap; **não** instanciar serviços fora do bootstrap.
 
-- **Desenvolvedor .NET sênior:** código conciso e idiomático, seguindo convenções Microsoft.
-- **Versão recomendada:** **.NET 10** (ou versão LTS mais recente) com C# 13.
-- Nomes descritivos; estrutura de arquivos alinhada às convenções .NET.
+**Quick Reference:** para tabela de decisão rápida e princípios-chave, consultar `.cursor/documents/quick-reference.md`.
 
-## 2. Nomenclatura
-
-| Elemento            | Convenção   | Exemplo                    |
-|---------------------|------------|----------------------------|
-| Classes, métodos, propriedades | PascalCase | `UserService`, `GetById`   |
-| Variáveis locais, campos privados | camelCase  | `userName`, `_repository`  |
-| Constantes          | UPPERCASE  | `MaxRetryCount`            |
-| Interfaces          | Prefixo `I`| `IUserRepository`, `ITokenService` |
-
-## 3. C# Moderno (C# 13 / .NET 10)
-
-### 3.1 Construtores Primários (C# 12+)
-
-**SEMPRE usar construtores primários** para classes com DI:
-
-```csharp
-// ✅ Correto
-public class CreateUserUseCase(IUserRepository userRepository, ITokenService tokenService)
-{
-    public async Task<ResponseModel> ExecuteAsync(InputModel input, CancellationToken ct = default)
-    {
-        var output = await userRepository.CreateAsync(input, ct);
-        return Presenter.Present(output);
-    }
-}
-
-// ❌ Evitar
-public class CreateUserUseCase
-{
-    private readonly IUserRepository _userRepository;
-    public CreateUserUseCase(IUserRepository userRepository) => _userRepository = userRepository;
-}
-```
-
-### 3.2 Collection Expressions (C# 13)
-
-```csharp
-// ✅ Preferir
-var items = [item1, item2, item3];
-var combined = [..firstList, ..secondList];
-
-// ❌ Evitar quando collection expressions são mais legíveis
-var items = new List<Item> { item1, item2, item3 };
-```
-
-### 3.3 Outros Recursos Modernos
-
-- **Record types**, **pattern matching**, **null-coalescing** (`??`, `??=`)
-- **Null-conditional** (`?.`), **string interpolation** (`$"..."`)
-- **Expression-bodied members**, **raw string literals** (`"""..."""`)
-- **params Span<T>** (C# 13) para métodos variádicos sem alocações
-- Preferir **`var`** quando o tipo for óbvio
-
-## 4. Assincronismo
-
-- **async/await** para operações I/O-bound; evitar bloqueio de thread.
-- **Evitar `async void`** exceto para event handlers.
-- **ValueTask<T>:** quando a operação frequentemente completa de forma síncrona.
-- **IAsyncEnumerable<T>:** para streaming de dados assíncronos.
-- **ConfigureAwait(false):** considerar em bibliotecas (menos relevante no .NET Core+).
-
-```csharp
-// ✅ Streaming assíncrono
-public async IAsyncEnumerable<Order> GetOrdersStreamAsync(
-    [EnumeratorCancellation] CancellationToken ct = default)
-{
-    await foreach (var order in _repository.StreamOrdersAsync(ct))
-    {
-        yield return order;
-    }
-}
-```
-
-## 5. Tratamento de Erros
-
-- **Exceções para casos excepcionais**, não para controle de fluxo.
-- **Logging estruturado** (ILogger com structured logging).
-- **LoggerMessage Source Generators** (.NET 6+) para alta performance:
-
-```csharp
-public static partial class Log
-{
-    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Processing {OrderId}")]
-    public static partial void ProcessingOrder(ILogger logger, string orderId);
-}
-```
-
-- **Middleware global de exceções** para respostas padronizadas (Problem Details RFC 7807).
-- **IExceptionHandler** (.NET 8+) para tratamento tipado.
-
-## 6. Serialização JSON
-
-- **Padrão:** camelCase (PascalCase C# → camelCase JSON).
-- **System.Text.Json** (padrão do .NET) para novos projetos.
-
-```csharp
-services.AddControllers().AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-});
-```
-
-- **Evitar `[JsonPropertyName]`** quando camelCase padrão for suficiente.
-- **Source Generators:** `[JsonSerializable]` para AOT e performance crítica.
-
-## 7. Dependency Injection
-
-- **DI no bootstrap** (Program.cs); injetar via construtor (preferir primary constructors).
-- **Não** instanciar serviços fora do bootstrap; usar interfaces.
-- **Keyed Services** (.NET 8+) para múltiplas implementações:
-
-```csharp
-services.AddKeyedSingleton<INotificationService, EmailService>("email");
-services.AddKeyedSingleton<INotificationService, SmsService>("sms");
-
-public class Handler([FromKeyedServices("email")] INotificationService emailService) { }
-```
-
-## 8. API Design
-
-- Princípios **RESTful**; **attribute routing** nos controllers.
-- **Minimal APIs** (.NET 6+) para endpoints simples:
-
-```csharp
-app.MapPost("/users", async (CreateUserInput input, IUseCase useCase) =>
-{
-    var result = await useCase.ExecuteAsync(input);
-    return Results.Ok(result);
-}).WithName("CreateUser").WithOpenApi();
-```
-
-- **Action filters** para cross-cutting (autenticação, logging).
-- **XML comments** para enriquecer Swagger/OpenAPI.
-- **Rate limiting** (.NET 7+) e **output caching** (.NET 7+) quando apropriado.
-
-## 9. Segurança
-
-- **Middleware de autenticação/autorização**; **JWT** para APIs stateless.
-- **HTTPS/TLS** em produção; políticas **CORS** adequadas.
-- **Validar e sanitizar** todas as entradas.
-- **Secrets:** User Secrets (dev), variáveis de ambiente, Key Vault (prod).
-- **Security headers** via middleware (HSTS, X-Frame-Options).
-
-## 10. Configuração
-
-- **Variáveis de ambiente** ou **IOptions<T>** para configurações sensíveis.
-- **Não** versionar segredos; usar placeholders vazios.
-- **User Secrets** para dev: `dotnet user-secrets set "Section:Key" "value"`.
-- **Options pattern:** preferir `IOptions<T>` para configurações tipadas e validadas.
-
-## 11. Gerenciamento de Solução
-
-- **Sempre** adicionar novos projetos à solução: `dotnet sln add <caminho-projeto>`.
-- Manter organização clara: projetos em `src/` e `tests/` na raiz.
-
----
-
-## Quando Usar Skills Especializadas
-
-**Regra:** Ao identificar que a tarefa envolve um dos contextos abaixo, **ler e aplicar** a skill correspondente (arquivo `SKILL.md` no caminho indicado). Não é necessário o usuário mencionar a skill — use os gatilhos para decidir.
-
-| Se a tarefa envolver… | Skill | Caminho |
-|-----------------------|-------|---------|
-| Banco de dados, repositório, EF Core, migration, DbContext, queries, persistência | `database-persistence` | `.cursor/skills/database-persistence/SKILL.md` |
-| API externa, Refit, HttpClient, consumir API, integração com serviço externo | `external-api-refit` | `.cursor/skills/external-api-refit/SKILL.md` |
-| Validação, FluentValidation, validators, InputModel, regras de validação | `validation-fluentvalidation` | `.cursor/skills/validation-fluentvalidation/SKILL.md` |
-| Testes, BDD, SpecFlow, xUnit, cobertura, build, CI/CD, qualidade | `testing` | `.cursor/skills/testing/SKILL.md` |
-| Logging, métricas, tracing, OpenTelemetry, health check, observabilidade | `observability` | `.cursor/skills/observability/SKILL.md` |
-| Performance, otimização, Span, ArrayPool, ValueTask, alocações, hot path | `performance-optimization` | `.cursor/skills/performance-optimization/SKILL.md` |
-| Segurança, JWT, autenticação, autorização, secrets, rate limiting, CORS | `security` | `.cursor/skills/security/SKILL.md` |
-| Lambda API com AddAWSLambdaHosting, API Gateway, GATEWAY_PATH_PREFIX, GATEWAY_STAGE, OpenAPI atrás do gateway | `lambda-api-hosting` | `.cursor/skills/lambda-api-hosting/SKILL.md` |
+**Skills por contexto:** aplicar skill conforme a tarefa:
+- DB/repositórios → `.cursor/skills/database-persistence/SKILL.md`
+- APIs externas → `.cursor/skills/external-api-refit/SKILL.md`
+- Validação → `.cursor/skills/validation-fluentvalidation/SKILL.md`
+- Testes → `.cursor/skills/testing/SKILL.md`
+- Segurança → `.cursor/skills/security/SKILL.md`
+- Performance → `.cursor/skills/performance-optimization/SKILL.md`
+- Observabilidade → `.cursor/skills/observability/SKILL.md`
+- Lambda API → `.cursor/skills/lambda-api-hosting/SKILL.md`
