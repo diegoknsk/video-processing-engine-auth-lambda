@@ -21,7 +21,7 @@ O workflow `.github/workflows/deploy-lambda.yml` inclui o job **SonarCloud Analy
 | `SONAR_PROJECT_KEY`   | Chave do projeto no SonarCloud (ex.: `video-processing-engine-auth-lambda`). |
 | `SONAR_ORGANIZATION`   | Slug da organização no SonarCloud (ex.: `diegoknsk`). |
 
-O arquivo `sonar-project.properties` na raiz do repositório deve usar os mesmos valores (ou as variáveis do GitHub sobrescrevem no CI).
+**Nota:** O SonarScanner for .NET não utiliza o arquivo `sonar-project.properties`; todas as opções (sources, exclusions, cobertura, etc.) são passadas no step **Begin SonarCloud analysis** do workflow.
 
 ### Quality Gate
 
