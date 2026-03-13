@@ -3,6 +3,8 @@
 API de autenticação para Video Processing Engine usando Amazon Cognito.
 
 [![Deploy to AWS Lambda](https://github.com/diegoknsk/video-processing-engine-auth-lambda/actions/workflows/deploy-lambda.yml/badge.svg)](https://github.com/diegoknsk/video-processing-engine-auth-lambda/actions/workflows/deploy-lambda.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=diegoknsk_video-processing-engine-auth-lambda&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=diegoknsk_video-processing-engine-auth-lambda)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=diegoknsk_video-processing-engine-auth-lambda&metric=coverage)](https://sonarcloud.io/summary/new_code?id=diegoknsk_video-processing-engine-auth-lambda)
 
 ## 📚 Documentação
 

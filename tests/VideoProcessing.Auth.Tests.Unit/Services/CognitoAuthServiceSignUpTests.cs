@@ -219,6 +219,26 @@ public class CognitoAuthServiceSignUpTests
     }
 
     [Fact]
+    public async Task SignUpAsync_WhenUnexpectedException_ShouldPropagate()
+    {
+        // Arrange
+        var name = "Diego";
+        var email = "test@example.com";
+        var password = "password123";
+
+        _cognitoClientMock
+            .Setup(x => x.AdminCreateUserAsync(It.IsAny<AdminCreateUserRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Unexpected service error"));
+
+        var service = new CognitoAuthService(_cognitoClientMock.Object, _optionsMock.Object, _loggerMock.Object);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.SignUpAsync(name, email, password));
+        ex.Message.Should().Be("Unexpected service error");
+    }
+
+    [Fact]
     public async Task SignUpAsync_ShouldCallAdminCreateUserWithCorrectParameters()
     {
         // Arrange

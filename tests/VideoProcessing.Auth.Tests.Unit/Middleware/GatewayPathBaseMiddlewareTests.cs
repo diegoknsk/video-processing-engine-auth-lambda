@@ -6,6 +6,7 @@ using VideoProcessing.Auth.Api.Middleware;
 
 namespace VideoProcessing.Auth.Tests.Unit.Middleware;
 
+[Collection("EnvVar")]
 public class GatewayPathBaseMiddlewareTests
 {
     private const string GatewayPathPrefixKey = "GATEWAY_PATH_PREFIX";
@@ -237,6 +238,69 @@ public class GatewayPathBaseMiddlewareTests
         finally
         {
             Environment.SetEnvironmentVariable(GatewayStageKey, null);
+        }
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenPrefixHasTrailingSlash_ShouldNormalizeAndStrip()
+    {
+        var (context, nextMock) = CreateContextAndNext("/auth/health");
+        SetEnv("/auth/");
+        try
+        {
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
+
+            await middleware.InvokeAsync(context);
+
+            context.Request.PathBase.Should().Be(new PathString("/auth"));
+            context.Request.Path.Should().Be(new PathString("/health"));
+            nextMock.Verify(x => x(It.IsAny<HttpContext>()), Times.Once);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(GatewayPathPrefixKey, null);
+        }
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenPathShorterThanPrefix_ShouldNotAlterPath()
+    {
+        var (context, nextMock) = CreateContextAndNext("/ab");
+        SetEnv("/auth");
+        try
+        {
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
+
+            await middleware.InvokeAsync(context);
+
+            context.Request.PathBase.Should().Be(PathString.Empty);
+            context.Request.Path.Should().Be(new PathString("/ab"));
+            nextMock.Verify(x => x(It.IsAny<HttpContext>()), Times.Once);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(GatewayPathPrefixKey, null);
+        }
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenPathHasPrefixSubstringButNotFollowedBySlash_ShouldNotAlterPath()
+    {
+        var (context, nextMock) = CreateContextAndNext("/authx/health");
+        SetEnv("/auth");
+        try
+        {
+            var middleware = new GatewayPathBaseMiddleware(nextMock.Object, Mock.Of<ILogger<GatewayPathBaseMiddleware>>());
+
+            await middleware.InvokeAsync(context);
+
+            context.Request.PathBase.Should().Be(PathString.Empty);
+            context.Request.Path.Should().Be(new PathString("/authx/health"));
+            nextMock.Verify(x => x(It.IsAny<HttpContext>()), Times.Once);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(GatewayPathPrefixKey, null);
         }
     }
 
