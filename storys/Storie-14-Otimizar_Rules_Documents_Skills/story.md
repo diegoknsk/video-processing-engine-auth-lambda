@@ -133,3 +133,11 @@ Para que **o agente consuma menos tokens, encontre informações mais rápido e 
 - ✅ **Nenhuma informação crítica perdida** (validado)
 - ✅ **Skills mais escaneáveis** (<200 linhas cada)
 - ✅ **Estrutura agnóstica** pronta para distribuição via MCP
+
+---
+
+## Documentação relacionada
+
+- **Quick Reference (tabela de decisão):** [.cursor/documents/quick-reference.md](../../.cursor/documents/quick-reference.md)
+- **Estratégia de condensação:** [.cursor/documents/estrategia-condensacao.md](../../.cursor/documents/estrategia-condensacao.md)
+- **Rules:** `.cursor/rules/core-dotnet.mdc`, `.cursor/rules/core-clean-architecture.mdc`

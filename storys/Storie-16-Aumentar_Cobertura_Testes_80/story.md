@@ -63,6 +63,12 @@ Criar testes unitários para os componentes sem cobertura (AuthController, UserC
 - [ ] Todos os testes novos e existentes passando: `dotnet test` retorna saída sem falhas.
 - [ ] Nenhum pacote novo adicionado ao projeto de testes; apenas pacotes já existentes utilizados.
 
+## Documentação relacionada
+
+- **Testes e cobertura:** `.cursor/skills/testing/SKILL.md`
+- **Cobertura no SonarCloud (OpenCover, Quality Gate):** [docs/documentacaoSonar.md](../../docs/documentacaoSonar.md)
+- **Storie-15 (SonarCloud):** [Storie-15-Integracao_SonarCloud_Quality_Gate](../Storie-15-Integracao_SonarCloud_Quality_Gate/story.md) — dependência para meta de cobertura no pipeline
+
 ## Rastreamento (dev tracking)
 - **Início:** 13/03/2026, às 02:12 (Brasília)
 - **Fim:** —
