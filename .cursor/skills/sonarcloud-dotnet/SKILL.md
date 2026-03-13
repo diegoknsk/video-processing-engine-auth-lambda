@@ -10,8 +10,13 @@ description: Integra projeto .NET ao SonarCloud via GitHub Actions — configura
 | # | Problema | Causa | Solução |
 |---|----------|-------|---------|
 | 1 | `sonar-project.properties files are not understood` | O SonarScanner for .NET ignora esse arquivo | Nunca criar `sonar-project.properties`; passar tudo via `/d:` |
-| 2 | `No analyzable projects were found` — todos os arquivos "not located under the base directory"  | `sonar.projectBaseDir="."` resolve para `.sonarqube/` no runner | Usar `sonar.projectBaseDir="${{ github.workspace }}"` (caminho absoluto) |
+| 2 | `No analyzable projects were found` — todos os arquivos "not located under the base directory" | `sonar.projectBaseDir="."` resolve para `.sonarqube/` no runner | Usar `sonar.projectBaseDir="${{ github.workspace }}"` (caminho absoluto) |
 | 3 | Cobertura não aparece no SonarCloud | Path relativo no `CoverletOutput` não bate com o glob do Sonar | Manter `CoverletOutput=./TestResults/coverage.opencover.xml` e `sonar.cs.opencover.reportsPaths="tests/**/TestResults/**/coverage.opencover.xml"` |
+| 4 | `You are running CI analysis while Automatic Analysis is enabled` — pipeline falha com exit code 1 | SonarCloud tem Automatic Analysis ativa ao mesmo tempo que o CI | Desativar em **Administration → Analysis Method → Automatic Analysis (toggle OFF)** |
+| 5 | Dois projetos SonarCloud para o mesmo repositório ("duplicado") | Repositório público cria projeto automático; projeto manual coexiste | Escolher um projeto (geralmente o público), desativar Automatic Analysis nele, deletar o projeto órfão via **Administration → Deletion** |
+| 6 | Overview do SonarCloud mostra "No data available" para cobertura após configurar CI | CI rodou apenas em PR; o Overview exibe status da branch `main` | Fazer push ou merge para `main` para acionar análise da branch principal |
+| 7 | PR mostra "0.0% Coverage on New Code" mesmo com testes cobrindo as mudanças | Arquivos de teste são excluídos da métrica de cobertura; README não é C# | Comportamento esperado — Quality Gate não falha se a cobertura geral do projeto atende o mínimo |
+| 8 | Quality Gate falha com "C Maintainability Rating on New Code" | Variável declarada e não utilizada no código novo (code smell) | Remover variáveis não utilizadas antes de abrir o PR |
 
 ---
 

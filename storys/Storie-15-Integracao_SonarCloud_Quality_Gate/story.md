@@ -46,6 +46,12 @@ Integrar o SonarCloud ao pipeline GitHub Actions existente, configurando anális
 - [ ] O secret `SONAR_TOKEN` está documentado e configurado no repositório GitHub
 - [ ] O pipeline continua funcionando para o job de deploy após a aprovação do Quality Gate
 
+## Documentação relacionada
+
+- **SonarCloud (setup, secrets, Quality Gate):** [docs/documentacaoSonar.md](../../docs/documentacaoSonar.md)
+- **Deploy e secrets/variáveis do pipeline:** [docs/deploy-github-actions.md](../../docs/deploy-github-actions.md) e [README.md](../../README.md) (seção Configuração Necessária)
+- **Skill SonarCloud .NET:** `.cursor/skills/sonarcloud-dotnet/SKILL.md`
+
 ## Rastreamento (dev tracking)
 - **Início:** 13/03/2026, às 01:32 (Brasília)
 - **Fim:** —

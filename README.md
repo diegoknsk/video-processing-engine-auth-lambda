@@ -10,10 +10,10 @@ API de autenticação para Video Processing Engine usando Amazon Cognito.
 
 - **Documentação Interativa (Scalar UI)**: Acesse `/docs` quando a aplicação estiver em execução
 - **Especificação OpenAPI**: Disponível em `/swagger/v1/swagger.json`
-- **Geração de Client Kiota**: Veja [docs/kiota-client-generation.md](./docs/kiota-client-generation.md)
 - **Configuração API Gateway**: Veja [docs/api-gateway-configuration.md](./docs/api-gateway-configuration.md)
 - **Contexto Arquitetural**: Veja [docs/contexto-arquitetural.md](./docs/contexto-arquitetural.md)
 - **Deploy e CI/CD**: Veja [docs/deploy-github-actions.md](./docs/deploy-github-actions.md)
+- **SonarCloud (Quality Gate, cobertura)**: Veja [docs/documentacaoSonar.md](./docs/documentacaoSonar.md)
 - **Prefixo de path no API Gateway**: Veja [docs/gateway-path-prefix.md](./docs/gateway-path-prefix.md) (variável `GATEWAY_PATH_PREFIX` para uso atrás de gateway com prefixo, ex.: `/auth`)
 
 ## 🚀 Endpoints
@@ -123,7 +123,6 @@ A aplicação requer credenciais IAM com as seguintes permissões no Amazon Cogn
 ## 📖 Mais Informações
 
 Consulte a [documentação completa](./docs/) para mais detalhes sobre:
-- Geração de clientes tipados com Kiota
 - Configuração para API Gateway
 - Arquitetura e decisões técnicas
 - Deploy automatizado via GitHub Actions
@@ -148,9 +147,20 @@ Você pode executar o deploy manualmente em qualquer branch via GitHub Actions:
 
 ### Configuração Necessária
 
+Há três tipos de configuração envolvidos no deploy e na execução da API:
+
+| Onde | O que é | Uso |
+|------|---------|-----|
+| **GitHub Secrets** | Dados sensíveis (credenciais) — **nunca** aparecem em logs | Autenticação AWS no pipeline (deploy) |
+| **GitHub Variables** | Parâmetros do pipeline (não sensíveis) — podem ter valor padrão no workflow | Nome do Lambda, região, opcionalmente Cognito e prefixo de path |
+| **Variáveis de ambiente do Lambda** | Configuração da aplicação em runtime na AWS | Cognito, ambiente ASP.NET; a aplicação lê essas variáveis ao rodar no Lambda |
+
+- **Secrets** são obrigatórios para o deploy: o workflow usa eles para autenticar na AWS. Variáveis são opcionais quando o workflow já define valor padrão (ex.: região `us-east-1`).
+- **Variáveis de ambiente do Lambda** são configuradas na função Lambda (Console ou IaC) e **não** são as mesmas que GitHub Variables: as do Lambda são lidas pela aplicação .NET em execução; as do GitHub são usadas pelo workflow durante o deploy. Opcionalmente, o workflow pode atualizar as variáveis do Lambda a partir de GitHub Variables (ex.: `COGNITO_USER_POOL_ID`, `GATEWAY_PATH_PREFIX`). Ver [docs/deploy-github-actions.md](./docs/deploy-github-actions.md).
+
 #### GitHub Secrets (obrigatórios)
 
-Configure em `Settings > Secrets and variables > Actions > Secrets`:
+Configure em **Settings → Secrets and variables → Actions → Secrets**:
 
 | Secret | Descrição |
 |--------|-----------|
@@ -159,16 +169,19 @@ Configure em `Settings > Secrets and variables > Actions > Secrets`:
 
 #### GitHub Variables (opcionais)
 
-Configure em `Settings > Secrets and variables > Actions > Variables`:
+Configure em **Settings → Secrets and variables → Actions → Variables**:
 
 | Variable | Descrição | Valor Padrão |
 |----------|-----------|--------------|
 | `AWS_REGION` | Região AWS do Lambda | `us-east-1` |
 | `LAMBDA_FUNCTION_NAME` | Nome da função Lambda | `video-processing-engine-dev-auth` |
+| `COGNITO_USER_POOL_ID` | (Opcional) Se definida, o workflow atualiza a env var `Cognito__UserPoolId` do Lambda em todo deploy | — |
+| `COGNITO_CLIENT_ID` | (Opcional) Idem para `Cognito__ClientId` | — |
+| `GATEWAY_PATH_PREFIX` | (Opcional) Prefixo de path no API Gateway (ex.: `/auth`); ver [gateway-path-prefix.md](./docs/gateway-path-prefix.md) | — |
 
 #### Variáveis de Ambiente do Lambda
 
-Configure as seguintes variáveis de ambiente na função Lambda (via AWS Console ou IaC):
+Configuradas na **função Lambda** (AWS Console ou IaC). A aplicação .NET lê essas variáveis em runtime. Notação `__` (dois underscores) equivale à hierarquia no `appsettings.json` (ex.: `Cognito__Region` → `Cognito:Region`).
 
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
