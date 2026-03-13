@@ -30,15 +30,71 @@ env:
   DEPLOY_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
 
 jobs:
+  sonar-analysis:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_REF }}
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Begin SonarCloud analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"${{ vars.SONAR_PROJECT_KEY }}" \
+            /o:"${{ vars.SONAR_ORGANIZATION }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.projectBaseDir="${{ github.workspace }}" \
+            /d:sonar.sources="src/" \
+            /d:sonar.tests="tests/" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.Designer.cs" \
+            /d:sonar.test.exclusions="tests/**/" \
+            /d:sonar.coverage.exclusions="**/Program.cs,**/*Extensions.cs" \
+            /d:sonar.cs.opencover.reportsPaths="tests/**/TestResults/**/coverage.opencover.xml"
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests with coverage
+        run: |
+          dotnet test \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            /p:CollectCoverage=true \
+            /p:CoverageReporter=opencover \
+            /p:CoverletOutputFormat=opencover \
+            /p:CoverletOutput=./TestResults/coverage.opencover.xml
+
+      - name: End SonarCloud analysis
+        run: |
+          dotnet sonarscanner end \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
   build-and-deploy:
     name: Build and Deploy to AWS Lambda
     runs-on: ubuntu-latest
-    
+    needs: [sonar-analysis]
+
     # Previne execuções concorrentes do mesmo workflow
     concurrency:
       group: deploy-lambda-${{ github.ref }}
       cancel-in-progress: false
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,24 +206,3 @@ jobs:
           path: deployment-package.zip
           retention-days: 7
 
-  # Job separado para futura verificação de cobertura de testes
-  # Preparado para story futura: bloquear PR com cobertura < 70%
-  # test-coverage:
-  #   name: Verify Test Coverage
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v4
-  #       with:
-  #         dotnet-version: ${{ env.DOTNET_VERSION }}
-  #     
-  #     - name: Run tests with coverage
-  #       run: dotnet test /p:CollectCoverage=true /p:CoverageReporter=cobertura
-  #     
-  #     - name: Verify coverage threshold
-  #       run: |
-  #         # Script para verificar se cobertura >= 70%
-  #         # Falhar o job se abaixo do threshold
