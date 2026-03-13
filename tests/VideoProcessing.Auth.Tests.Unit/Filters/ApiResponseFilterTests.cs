@@ -136,7 +136,21 @@ public class ApiResponseFilterTests
         context.Result.Should().Be(noContentResult);
     }
 
-    private static ActionExecutedContext CreateActionExecutedContext(IActionResult result)
+    [Fact]
+    public void OnActionExecuted_WhenResultIsNull_ShouldNotThrowAndNotModify()
+    {
+        // Arrange
+        var context = CreateActionExecutedContext(null!);
+
+        // Act
+        var act = () => _filter.OnActionExecuted(context);
+
+        // Assert
+        act.Should().NotThrow();
+        context.Result.Should().BeNull();
+    }
+
+    private static ActionExecutedContext CreateActionExecutedContext(IActionResult? result)
     {
         var httpContext = new DefaultHttpContext();
         var actionDescriptor = new ActionDescriptor
@@ -148,7 +162,7 @@ public class ApiResponseFilterTests
         
         return new ActionExecutedContext(actionContext, new List<IFilterMetadata>(), null!)
         {
-            Result = result
+            Result = result!
         };
     }
 }

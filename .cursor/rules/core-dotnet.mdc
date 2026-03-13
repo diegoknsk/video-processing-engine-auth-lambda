@@ -20,3 +20,4 @@ description: "Convenções essenciais .NET — código idiomático, nomenclatura
 - Performance → `.cursor/skills/performance-optimization/SKILL.md`
 - Observabilidade → `.cursor/skills/observability/SKILL.md`
 - Lambda API → `.cursor/skills/lambda-api-hosting/SKILL.md`
+- SonarCloud/cobertura → `.cursor/skills/sonarcloud-dotnet/SKILL.md`

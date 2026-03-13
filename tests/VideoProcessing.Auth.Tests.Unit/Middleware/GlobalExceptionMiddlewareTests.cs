@@ -186,6 +186,24 @@ public class GlobalExceptionMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenAmazonCognitoIdentityProviderException_ShouldReturn502WithExternalServiceError()
+    {
+        // Arrange - exceção base do Cognito (não uma das específicas já mapeadas)
+        var context = CreateHttpContext();
+        _nextMock.Setup(x => x(It.IsAny<HttpContext>())).ThrowsAsync(new InternalErrorException("Internal error"));
+
+        // Act
+        await _middleware.InvokeAsync(context);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status502BadGateway);
+        var errorResponse = await DeserializeErrorResponse(context);
+        errorResponse.Success.Should().BeFalse();
+        errorResponse.Error.Code.Should().Be("ExternalServiceError");
+        errorResponse.Error.Message.Should().Be("Erro ao comunicar com serviço de autenticação.");
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenGenericException_ShouldReturn500WithInternalServerError()
     {
         // Arrange
