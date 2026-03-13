@@ -31,7 +31,7 @@ public class LoginUseCase
     public async Task<LoginResponseModel> ExecuteAsync(LoginInput input, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Executing login use case for user {Email}", input.Email);
-        var teste = input.Email; 
+
         var output = await _cognitoAuthService.LoginAsync(input.Email, input.Password, cancellationToken);
 
         _logger.LogInformation("Login successful for user {Email}", input.Email);
