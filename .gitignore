@@ -47,6 +47,14 @@ CodeCoverage/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
+coverage.opencover.xml
+
+# SonarCloud / SonarQube (scanner, cache, relatórios)
+.sonarqube/
+**/.sonarqube/
+**/out/.sonar/
+.scannerwork/
+**/.scannerwork/
 
 # NUnit
 *.VisualState.xml
